@@ -49,14 +49,16 @@ export default function PrintPage({ nodes, layout, contentWidth, contentHeight, 
           style={{
             position: "absolute",
             left: marginPx,
+            right: marginPx,
             top: marginPx,
-            height: logoRowPx - 16,
+            height: logoRowPx - 24,
             display: "flex",
             alignItems: "center",
+            justifyContent: "center",
           }}
         >
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <img src={logoDataUrl} style={{ maxHeight: "100%", maxWidth: 220, objectFit: "contain" }} />
+          <img src={logoDataUrl} style={{ maxHeight: "100%", maxWidth: 340, objectFit: "contain" }} />
         </div>
       )}
       <div

@@ -1,6 +1,6 @@
 export const LETTER_DPI = 96;
 export const PAGE_MARGIN_IN = 0.5;
-export const LOGO_ROW_IN = 0.9;
+export const LOGO_ROW_IN = 1.3;
 const MAX_CONTENT_SCALE = 2;
 
 const ORIENTATIONS = [
