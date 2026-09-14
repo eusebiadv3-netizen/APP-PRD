@@ -1,7 +1,11 @@
-import type { OrgNode, ParsedRow } from "../types";
+import type { OrgNode, ParsedRow, PositionStatus } from "../types";
 
 function makeId(index: number): string {
   return `n${index}`;
+}
+
+function makeNewNodeId(): string {
+  return `new-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function normalize(s: string): string {
@@ -95,4 +99,31 @@ export function getSubtreeIds(nodes: OrgNode[], rootId: string): Set<string> {
     for (const c of childrenMap[id] ?? []) stack.push(c);
   }
   return result;
+}
+
+export function createNode(
+  title: string,
+  name: string,
+  status: PositionStatus,
+  managerId: string | null
+): OrgNode {
+  return { id: makeNewNodeId(), title, name, status, managerId, confirmed: true };
+}
+
+/**
+ * Removes a node. Its direct subordinates (if any) either move up to the
+ * deleted node's own manager ("reassign"), or become top-level ("root") —
+ * the caller must choose explicitly, never assumed.
+ */
+export function deleteNode(
+  nodes: OrgNode[],
+  nodeId: string,
+  strategy: "reassign" | "root"
+): OrgNode[] {
+  const target = nodes.find((n) => n.id === nodeId);
+  if (!target) return nodes;
+  const replacementManagerId = strategy === "reassign" ? target.managerId : null;
+  return nodes
+    .filter((n) => n.id !== nodeId)
+    .map((n) => (n.managerId === nodeId ? { ...n, managerId: replacementManagerId } : n));
 }

@@ -22,7 +22,7 @@ async function getDownloadsCapability(): Promise<DownloadsNamespace | null> {
  * Decodes a base64 data: URL into a Blob without using fetch/XHR — some
  * sandboxed hosts block those network APIs entirely, even for data: URIs.
  */
-function dataUrlToBlob(dataUrl: string): Blob {
+export function dataUrlToBlob(dataUrl: string): Blob {
   const commaIndex = dataUrl.indexOf(",");
   const header = dataUrl.slice(0, commaIndex);
   const base64 = dataUrl.slice(commaIndex + 1);
@@ -36,29 +36,42 @@ function dataUrlToBlob(dataUrl: string): Blob {
 
 export class DownloadCancelledError extends Error {}
 
-/** Offers a data: URL to the viewer as a downloadable file named `filename`. */
-export async function saveGeneratedFile(dataUrl: string, filename: string): Promise<void> {
-  const finalName = filename.endsWith(".png") ? filename : `${filename}.png`;
-
+/**
+ * Offers a Blob to the viewer as a downloadable file. This is the one path
+ * every export in the app should go through — never a library's own
+ * "save file" helper (e.g. SheetJS's writeFile) or a bare `<a download>`,
+ * both of which silently no-op in a sandboxed preview.
+ */
+export async function saveBlob(blob: Blob, filename: string): Promise<void> {
   const downloads = await getDownloadsCapability();
   if (downloads) {
-    const blob = dataUrlToBlob(dataUrl);
     try {
-      await downloads.save({ filename: finalName, data: blob });
+      await downloads.save({ filename, data: blob });
     } catch (e) {
       const code = (e as { code?: string } | undefined)?.code;
       if (code === "declined") throw new DownloadCancelledError();
       throw new Error(
-        `No se pudo guardar la imagen (código: ${code ?? "desconocido"}). Inténtalo de nuevo.`
+        `No se pudo guardar el archivo (código: ${code ?? "desconocido"}). Inténtalo de nuevo.`
       );
     }
     return;
   }
 
-  const link = document.createElement("a");
-  link.download = finalName;
-  link.href = dataUrl;
-  link.click();
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement("a");
+    link.download = filename;
+    link.href = url;
+    link.click();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** Offers a data: URL (e.g. from html-to-image) to the viewer as `filename`. */
+export async function saveGeneratedFile(dataUrl: string, filename: string): Promise<void> {
+  const finalName = filename.endsWith(".png") ? filename : `${filename}.png`;
+  await saveBlob(dataUrlToBlob(dataUrl), finalName);
 }
 
 export function slugify(text: string): string {

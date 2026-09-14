@@ -29,6 +29,8 @@ const LIGHT_TOKENS = {
   "--color-shadow-hover": "rgba(0, 0, 0, 0.12)",
 } as CSSProperties;
 
+const FRAME_INSET = 24; // sits inside the 0.5in margin, never touches content
+
 export default function PrintPage({ nodes, layout, contentWidth, contentHeight, logoDataUrl }: Props) {
   const { pageWidth, pageHeight, marginPx, logoRowPx, scale, offsetX, offsetY } = layout;
 
@@ -44,6 +46,17 @@ export default function PrintPage({ nodes, layout, contentWidth, contentHeight, 
         fontFamily: '"Segoe UI", system-ui, -apple-system, sans-serif',
       }}
     >
+      <div
+        style={{
+          position: "absolute",
+          left: FRAME_INSET,
+          top: FRAME_INSET,
+          right: FRAME_INSET,
+          bottom: FRAME_INSET,
+          border: "3px solid #2563eb",
+          borderRadius: 6,
+        }}
+      />
       {logoDataUrl && (
         <div
           style={{

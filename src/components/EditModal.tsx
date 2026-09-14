@@ -6,21 +6,26 @@ interface Props {
   node: OrgNode;
   allNodes: OrgNode[];
   onSave: (updated: OrgNode) => void;
+  onDelete: (nodeId: string, strategy: "reassign" | "root") => void;
   onClose: () => void;
 }
 
 const ROOT_VALUE = "__root__";
 
-export default function EditModal({ node, allNodes, onSave, onClose }: Props) {
+export default function EditModal({ node, allNodes, onSave, onDelete, onClose }: Props) {
   const [title, setTitle] = useState(node.title);
   const [name, setName] = useState(node.name);
   const [status, setStatus] = useState<PositionStatus>(node.status);
   const [managerId, setManagerId] = useState<string | null>(node.managerId);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleteStrategy, setDeleteStrategy] = useState<"reassign" | "root">("reassign");
 
   // A node can't report to itself or to any of its own subordinates
   // (that would create a cycle), so those are excluded as choices.
   const ownSubtree = getSubtreeIds(allNodes, node.id);
   const managerOptions = allNodes.filter((n) => !ownSubtree.has(n.id));
+  const subordinates = allNodes.filter((n) => n.managerId === node.id);
+  const managerOfNode = node.managerId ? allNodes.find((n) => n.id === node.managerId) : null;
 
   function handleSave() {
     const isVacant = status !== "ocupado";
@@ -31,6 +36,62 @@ export default function EditModal({ node, allNodes, onSave, onClose }: Props) {
       status,
       managerId,
     });
+  }
+
+  if (confirmingDelete) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal" onClick={(e) => e.stopPropagation()}>
+          <h2>Eliminar "{node.title}"</h2>
+          {subordinates.length > 0 ? (
+            <>
+              <p className="modal-warning">
+                {subordinates.length === 1
+                  ? "1 posición le reporta a este cargo."
+                  : `${subordinates.length} posiciones le reportan a este cargo.`}{" "}
+                ¿Qué debe pasar con {subordinates.length === 1 ? "ella" : "ellas"}?
+              </p>
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="delete-strategy"
+                  checked={deleteStrategy === "reassign"}
+                  onChange={() => setDeleteStrategy("reassign")}
+                />
+                <span>
+                  Reasignarlas a{" "}
+                  {managerOfNode
+                    ? managerOfNode.name
+                      ? `${managerOfNode.name} (${managerOfNode.title})`
+                      : managerOfNode.title
+                    : "nivel superior (sin jefe)"}
+                  , el jefe de "{node.title}"
+                </span>
+              </label>
+              <label className="radio-option">
+                <input
+                  type="radio"
+                  name="delete-strategy"
+                  checked={deleteStrategy === "root"}
+                  onChange={() => setDeleteStrategy("root")}
+                />
+                <span>Dejarlas sin jefe visible por ahora (nivel superior)</span>
+              </label>
+            </>
+          ) : (
+            <p className="modal-warning">Esta acción no se puede deshacer.</p>
+          )}
+          <div className="actions">
+            <button className="btn-secondary" onClick={() => setConfirmingDelete(false)}>
+              Cancelar
+            </button>
+            <button className="btn-danger" onClick={() => onDelete(node.id, deleteStrategy)}>
+              Confirmar eliminación
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -72,13 +133,18 @@ export default function EditModal({ node, allNodes, onSave, onClose }: Props) {
             ))}
           </select>
         </label>
-        <div className="actions">
-          <button className="btn-secondary" onClick={onClose}>
-            Cancelar
+        <div className="actions actions-split">
+          <button className="btn-danger-text" onClick={() => setConfirmingDelete(true)}>
+            Eliminar posición
           </button>
-          <button className="btn-primary" onClick={handleSave}>
-            Guardar
-          </button>
+          <div className="actions">
+            <button className="btn-secondary" onClick={onClose}>
+              Cancelar
+            </button>
+            <button className="btn-primary" onClick={handleSave}>
+              Guardar
+            </button>
+          </div>
         </div>
       </div>
     </div>
