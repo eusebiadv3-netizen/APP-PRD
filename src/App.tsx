@@ -78,13 +78,26 @@ export default function App() {
             onViewRootChange={setViewRootId}
           />
           <div className="chart-scroll">
-            <OrgChart ref={chartRef} nodes={chartNodes} onNodeClick={setEditingNode} />
+            <OrgChart
+              ref={chartRef}
+              nodes={chartNodes}
+              onNodeClick={(clicked) => {
+                // chartNodes may show a fabricated root (see above) for the
+                // filtered view; edit the real node so its true manager loads.
+                setEditingNode(nodes.find((n) => n.id === clicked.id) ?? clicked);
+              }}
+            />
           </div>
         </div>
       )}
 
       {editingNode && (
-        <EditModal node={editingNode} onSave={handleSaveEdit} onClose={() => setEditingNode(null)} />
+        <EditModal
+          node={editingNode}
+          allNodes={nodes}
+          onSave={handleSaveEdit}
+          onClose={() => setEditingNode(null)}
+        />
       )}
     </div>
   );

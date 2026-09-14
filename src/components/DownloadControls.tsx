@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { OrgNode } from "../types";
-import { downloadNodeAsPng, slugify } from "../lib/exportImage";
+import { downloadNodeAsPng, slugify, DownloadCancelledError } from "../lib/exportImage";
 
 const FULL_VALUE = "__full__";
 
@@ -13,16 +13,22 @@ interface Props {
 
 export default function DownloadControls({ nodes, chartRef, viewRootId, onViewRootChange }: Props) {
   const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleDownload() {
     if (!chartRef.current) return;
     setDownloading(true);
+    setError(null);
     try {
       const rootNode = viewRootId ? nodes.find((n) => n.id === viewRootId) : null;
       const filename = rootNode
         ? `organigrama-${slugify(rootNode.title)}`
         : "organigrama-completo";
       await downloadNodeAsPng(chartRef.current, filename);
+    } catch (e) {
+      if (!(e instanceof DownloadCancelledError)) {
+        setError(e instanceof Error ? e.message : "No se pudo descargar la imagen.");
+      }
     } finally {
       setDownloading(false);
     }
@@ -47,6 +53,7 @@ export default function DownloadControls({ nodes, chartRef, viewRootId, onViewRo
       <button className="btn-primary" onClick={handleDownload} disabled={downloading}>
         {downloading ? "Generando imagen..." : "Descargar imagen (PNG)"}
       </button>
+      {error && <span className="download-error">{error}</span>}
     </div>
   );
 }
