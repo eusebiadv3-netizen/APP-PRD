@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { AppStep, OrgNode, ParsedRow } from "./types";
 import { buildInitialNodes, getSubtreeIds } from "./lib/hierarchy";
+import { loadPersistedState, savePersistedState, clearPersistedState } from "./lib/persistence";
 import FileUpload from "./components/FileUpload";
 import HierarchyConfirmation from "./components/HierarchyConfirmation";
 import OrgChart from "./components/OrgChart";
@@ -9,12 +10,28 @@ import DownloadControls from "./components/DownloadControls";
 import LogoUpload from "./components/LogoUpload";
 
 export default function App() {
-  const [step, setStep] = useState<AppStep>("upload");
-  const [initialNodes, setInitialNodes] = useState<OrgNode[]>([]);
-  const [nodes, setNodes] = useState<OrgNode[]>([]);
+  const [step, setStep] = useState<AppStep>(() => loadPersistedState()?.step ?? "upload");
+  const [initialNodes, setInitialNodes] = useState<OrgNode[]>(
+    () => loadPersistedState()?.initialNodes ?? []
+  );
+  const [nodes, setNodes] = useState<OrgNode[]>(() => loadPersistedState()?.nodes ?? []);
   const [editingNode, setEditingNode] = useState<OrgNode | null>(null);
-  const [viewRootId, setViewRootId] = useState<string | null>(null);
-  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [viewRootId, setViewRootId] = useState<string | null>(
+    () => loadPersistedState()?.viewRootId ?? null
+  );
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(
+    () => loadPersistedState()?.logoDataUrl ?? null
+  );
+
+  // Autosave so a page reload (a published fix, an accidental refresh,
+  // reopening the tab later) doesn't force starting over from scratch.
+  useEffect(() => {
+    if (step === "upload") {
+      clearPersistedState();
+      return;
+    }
+    savePersistedState({ step, initialNodes, nodes, logoDataUrl, viewRootId });
+  }, [step, initialNodes, nodes, logoDataUrl, viewRootId]);
 
   function handleParsed(rows: ParsedRow[]) {
     setInitialNodes(buildInitialNodes(rows));
@@ -38,6 +55,7 @@ export default function App() {
     setNodes([]);
     setViewRootId(null);
     setLogoDataUrl(null);
+    clearPersistedState();
   }
 
   const visibleNodes = useMemo(() => {
