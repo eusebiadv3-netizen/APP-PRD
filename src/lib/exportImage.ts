@@ -22,6 +22,22 @@ async function getDownloadsCapability(): Promise<DownloadsNamespace | null> {
 
 export class DownloadCancelledError extends Error {}
 
+/**
+ * Decodes a base64 data: URL into a Blob without using fetch/XHR — some
+ * sandboxed hosts block those network APIs entirely, even for data: URIs.
+ */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const commaIndex = dataUrl.indexOf(",");
+  const header = dataUrl.slice(0, commaIndex);
+  const base64 = dataUrl.slice(commaIndex + 1);
+  const mimeMatch = header.match(/data:(.*?);base64/);
+  const mime = mimeMatch ? mimeMatch[1] : "image/png";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
 export async function downloadNodeAsPng(node: HTMLElement, filename: string): Promise<void> {
   const finalName = filename.endsWith(".png") ? filename : `${filename}.png`;
   const dataUrl = await toPng(node, {
@@ -32,13 +48,15 @@ export async function downloadNodeAsPng(node: HTMLElement, filename: string): Pr
 
   const downloads = await getDownloadsCapability();
   if (downloads) {
-    const blob = await (await fetch(dataUrl)).blob();
+    const blob = dataUrlToBlob(dataUrl);
     try {
       await downloads.save({ filename: finalName, data: blob });
     } catch (e) {
       const code = (e as { code?: string } | undefined)?.code;
       if (code === "declined") throw new DownloadCancelledError();
-      throw new Error("No se pudo guardar la imagen. Inténtalo de nuevo.");
+      throw new Error(
+        `No se pudo guardar la imagen (código: ${code ?? "desconocido"}). Inténtalo de nuevo.`
+      );
     }
     return;
   }
