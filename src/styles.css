@@ -11,8 +11,8 @@
   --color-primary-disabled: #93c5fd;
   --color-btn-secondary: #e2e8f0;
   --color-btn-secondary-hover: #cbd5e1;
-  --color-vacant-active: #fef3c7;
-  --color-vacant-active-border: #f59e0b;
+  --color-vacant-active: #fde68a;
+  --color-vacant-active-border: #d97706;
   --color-vacant-active-text: #92400e;
   --color-vacant-inactive: #f1f5f9;
   --color-vacant-inactive-border: #94a3b8;
@@ -336,11 +336,13 @@ h1 {
   border-radius: 10px;
   border: 2px solid var(--color-primary);
   background: var(--color-surface);
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.9rem;
   cursor: pointer;
   display: flex;
   flex-direction: column;
+  align-items: center;
   justify-content: center;
+  text-align: center;
   box-shadow: 0 1px 3px var(--color-shadow);
   transition: box-shadow 0.15s ease, transform 0.1s ease;
 }
@@ -351,21 +353,22 @@ h1 {
 }
 
 .org-node-title {
-  font-weight: 600;
-  font-size: 0.85rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  line-height: 1.25;
   color: var(--color-text);
 }
 
 .org-node-name {
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   color: var(--color-muted);
-  margin-top: 0.15rem;
+  margin-top: 0.2rem;
 }
 
 .org-node-status {
-  font-size: 0.7rem;
-  margin-top: 0.3rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  margin-top: 0.35rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -375,6 +378,7 @@ h1 {
 }
 
 .node-vacant-active {
+  border-width: 3px;
   border-color: var(--color-vacant-active-border);
   background: var(--color-vacant-active);
 }

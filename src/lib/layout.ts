@@ -1,8 +1,8 @@
 import type { OrgNode } from "../types";
 import { getChildrenMap, getRootIds } from "./hierarchy";
 
-export const BOX_WIDTH = 200;
-export const BOX_HEIGHT = 92;
+export const BOX_WIDTH = 220;
+export const BOX_HEIGHT = 104;
 export const H_GAP = 32;
 export const V_GAP = 70;
 
