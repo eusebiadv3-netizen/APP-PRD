@@ -58,18 +58,20 @@ export default function App() {
     clearPersistedState();
   }
 
-  const visibleNodes = useMemo(() => {
-    if (!viewRootId) return nodes;
-    const ids = getSubtreeIds(nodes, viewRootId);
-    return nodes.filter((n) => ids.has(n.id) && (n.id === viewRootId || n.managerId));
-  }, [nodes, viewRootId]);
-
-  // When filtering to a subtree, the subtree root should render without its
-  // (now hidden) manager line, so treat it as a root for this view only.
+  // An "area" view shows the area head's own manager (so it's clear who the
+  // area reports to) plus the head's full subtree (everyone who reports to
+  // them) — never the manager's other branches, and never further up than
+  // that one direct manager.
   const chartNodes = useMemo(() => {
-    if (!viewRootId) return visibleNodes;
-    return visibleNodes.map((n) => (n.id === viewRootId ? { ...n, managerId: null } : n));
-  }, [visibleNodes, viewRootId]);
+    if (!viewRootId) return nodes;
+    const subtreeIds = getSubtreeIds(nodes, viewRootId);
+    const subtreeNodes = nodes.filter((n) => subtreeIds.has(n.id));
+    const areaHead = nodes.find((n) => n.id === viewRootId);
+    const managerNode = areaHead?.managerId ? nodes.find((n) => n.id === areaHead.managerId) : null;
+    if (!managerNode) return subtreeNodes;
+    // Shown without ITS OWN manager, so this filtered view stops one level up.
+    return [{ ...managerNode, managerId: null }, ...subtreeNodes];
+  }, [nodes, viewRootId]);
 
   return (
     <div className="app">
