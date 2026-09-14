@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { AppStep, OrgNode, ParsedRow } from "./types";
 import { buildInitialNodes, getSubtreeIds } from "./lib/hierarchy";
 import FileUpload from "./components/FileUpload";
@@ -6,6 +6,7 @@ import HierarchyConfirmation from "./components/HierarchyConfirmation";
 import OrgChart from "./components/OrgChart";
 import EditModal from "./components/EditModal";
 import DownloadControls from "./components/DownloadControls";
+import LogoUpload from "./components/LogoUpload";
 
 export default function App() {
   const [step, setStep] = useState<AppStep>("upload");
@@ -13,7 +14,7 @@ export default function App() {
   const [nodes, setNodes] = useState<OrgNode[]>([]);
   const [editingNode, setEditingNode] = useState<OrgNode | null>(null);
   const [viewRootId, setViewRootId] = useState<string | null>(null);
-  const chartRef = useRef<HTMLDivElement>(null);
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
 
   function handleParsed(rows: ParsedRow[]) {
     setInitialNodes(buildInitialNodes(rows));
@@ -36,6 +37,7 @@ export default function App() {
     setInitialNodes([]);
     setNodes([]);
     setViewRootId(null);
+    setLogoDataUrl(null);
   }
 
   const visibleNodes = useMemo(() => {
@@ -71,15 +73,16 @@ export default function App() {
               Subir otro archivo
             </button>
           </header>
+          <LogoUpload logoDataUrl={logoDataUrl} onChange={setLogoDataUrl} />
           <DownloadControls
-            nodes={nodes}
-            chartRef={chartRef}
+            allNodes={nodes}
+            exportNodes={chartNodes}
+            logoDataUrl={logoDataUrl}
             viewRootId={viewRootId}
             onViewRootChange={setViewRootId}
           />
           <div className="chart-scroll">
             <OrgChart
-              ref={chartRef}
               nodes={chartNodes}
               onNodeClick={(clicked) => {
                 // chartNodes may show a fabricated root (see above) for the

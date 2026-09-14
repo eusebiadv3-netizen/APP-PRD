@@ -1,5 +1,3 @@
-import { toPng } from "html-to-image";
-
 interface DownloadsNamespace {
   save(request: { filename: string; data: Blob }): Promise<{ status: string }>;
 }
@@ -20,8 +18,6 @@ async function getDownloadsCapability(): Promise<DownloadsNamespace | null> {
   }
 }
 
-export class DownloadCancelledError extends Error {}
-
 /**
  * Decodes a base64 data: URL into a Blob without using fetch/XHR — some
  * sandboxed hosts block those network APIs entirely, even for data: URIs.
@@ -38,13 +34,11 @@ function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([bytes], { type: mime });
 }
 
-export async function downloadNodeAsPng(node: HTMLElement, filename: string): Promise<void> {
+export class DownloadCancelledError extends Error {}
+
+/** Offers a data: URL to the viewer as a downloadable file named `filename`. */
+export async function saveGeneratedFile(dataUrl: string, filename: string): Promise<void> {
   const finalName = filename.endsWith(".png") ? filename : `${filename}.png`;
-  const dataUrl = await toPng(node, {
-    pixelRatio: 2,
-    backgroundColor: "#ffffff",
-    cacheBust: true,
-  });
 
   const downloads = await getDownloadsCapability();
   if (downloads) {

@@ -1,30 +1,37 @@
 import { useState } from "react";
 import type { OrgNode } from "../types";
-import { downloadNodeAsPng, slugify, DownloadCancelledError } from "../lib/exportImage";
+import { slugify, DownloadCancelledError } from "../lib/exportImage";
+import { exportOrgChartAsLetterPng } from "../lib/exportChart";
 
 const FULL_VALUE = "__full__";
 
 interface Props {
-  nodes: OrgNode[];
-  chartRef: React.RefObject<HTMLDivElement>;
+  allNodes: OrgNode[];
+  exportNodes: OrgNode[];
+  logoDataUrl: string | null;
   viewRootId: string | null;
   onViewRootChange: (id: string | null) => void;
 }
 
-export default function DownloadControls({ nodes, chartRef, viewRootId, onViewRootChange }: Props) {
+export default function DownloadControls({
+  allNodes,
+  exportNodes,
+  logoDataUrl,
+  viewRootId,
+  onViewRootChange,
+}: Props) {
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleDownload() {
-    if (!chartRef.current) return;
     setDownloading(true);
     setError(null);
     try {
-      const rootNode = viewRootId ? nodes.find((n) => n.id === viewRootId) : null;
+      const rootNode = viewRootId ? allNodes.find((n) => n.id === viewRootId) : null;
       const filename = rootNode
         ? `organigrama-${slugify(rootNode.title)}`
         : "organigrama-completo";
-      await downloadNodeAsPng(chartRef.current, filename);
+      await exportOrgChartAsLetterPng(exportNodes, filename, logoDataUrl);
     } catch (e) {
       if (!(e instanceof DownloadCancelledError)) {
         setError(e instanceof Error ? e.message : "No se pudo descargar la imagen.");
@@ -43,7 +50,7 @@ export default function DownloadControls({ nodes, chartRef, viewRootId, onViewRo
           onChange={(e) => onViewRootChange(e.target.value === FULL_VALUE ? null : e.target.value)}
         >
           <option value={FULL_VALUE}>Organigrama completo</option>
-          {nodes.map((n) => (
+          {allNodes.map((n) => (
             <option key={n.id} value={n.id}>
               Área de: {n.name ? `${n.name} — ${n.title}` : n.title}
             </option>
@@ -51,7 +58,7 @@ export default function DownloadControls({ nodes, chartRef, viewRootId, onViewRo
         </select>
       </label>
       <button className="btn-primary" onClick={handleDownload} disabled={downloading}>
-        {downloading ? "Generando imagen..." : "Descargar imagen (PNG)"}
+        {downloading ? "Generando imagen..." : "Descargar imagen (PNG, tamaño carta)"}
       </button>
       {error && <span className="download-error">{error}</span>}
     </div>

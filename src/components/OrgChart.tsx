@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from "react";
+import { useMemo } from "react";
 import type { OrgNode } from "../types";
 import { computeLayout, BOX_WIDTH, BOX_HEIGHT } from "../lib/layout";
 import OrgChartNode from "./OrgChartNode";
@@ -8,7 +8,7 @@ interface Props {
   onNodeClick: (node: OrgNode) => void;
 }
 
-const OrgChart = forwardRef<HTMLDivElement, Props>(({ nodes, onNodeClick }, ref) => {
+export default function OrgChart({ nodes, onNodeClick }: Props) {
   const { positions, width, height } = useMemo(() => computeLayout(nodes), [nodes]);
 
   const lines = useMemo(() => {
@@ -29,11 +29,7 @@ const OrgChart = forwardRef<HTMLDivElement, Props>(({ nodes, onNodeClick }, ref)
   }, [nodes, positions]);
 
   return (
-    <div
-      ref={ref}
-      className="org-chart-canvas"
-      style={{ width, height, position: "relative" }}
-    >
+    <div className="org-chart-canvas" style={{ width, height, position: "relative" }}>
       <svg className="org-chart-lines" width={width} height={height}>
         {lines.map((l) => (
           <path key={l.id} d={l.path} fill="none" stroke="#94a3b8" strokeWidth={2} />
@@ -48,7 +44,4 @@ const OrgChart = forwardRef<HTMLDivElement, Props>(({ nodes, onNodeClick }, ref)
       })}
     </div>
   );
-});
-
-OrgChart.displayName = "OrgChart";
-export default OrgChart;
+}
