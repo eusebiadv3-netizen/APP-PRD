@@ -1,0 +1,11 @@
+Cargo,Nombre,Reporta a,Estado
+Gerente General,Ana Torres,,ocupado
+Gerente de Operaciones,Luis Mendez,Ana Torres,ocupado
+Gerente Comercial,Marta Diaz,Ana Torres,ocupado
+Gerente de Finanzas,,Ana Torres,vacante activa
+Jefe de Logistica,Pedro Ruiz,Luis Mendez,ocupado
+Jefe de Produccion,Carla Nunez,Luis Mendez,ocupado
+Ejecutivo de Ventas,Jorge Paz,Marta Diaz,ocupado
+Ejecutivo de Marketing,,Marta Diaz,vacante inactiva
+Analista de Finanzas,Sofia Leon,Gerente de Finanzas,ocupado
+Asistente de Logistica,Diego Rios,Pedro Ruiz,ocupado
