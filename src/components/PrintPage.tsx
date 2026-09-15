@@ -9,6 +9,7 @@ interface Props {
   contentWidth: number;
   contentHeight: number;
   logoDataUrl: string | null;
+  title: string;
 }
 
 // Printed output always uses the light palette, regardless of the viewer's
@@ -34,8 +35,8 @@ const LIGHT_TOKENS = {
 
 const FRAME_INSET = 24; // sits inside the 0.5in margin, never touches content
 
-export default function PrintPage({ nodes, layout, contentWidth, contentHeight, logoDataUrl }: Props) {
-  const { pageWidth, pageHeight, marginPx, logoRowPx, scale, offsetX, offsetY } = layout;
+export default function PrintPage({ nodes, layout, contentWidth, contentHeight, logoDataUrl, title }: Props) {
+  const { pageWidth, pageHeight, marginPx, titleRowPx, logoRowPx, scale, offsetX, offsetY } = layout;
 
   return (
     <div
@@ -60,13 +61,30 @@ export default function PrintPage({ nodes, layout, contentWidth, contentHeight, 
           borderRadius: 6,
         }}
       />
+      <div
+        style={{
+          position: "absolute",
+          left: marginPx,
+          right: marginPx,
+          top: marginPx,
+          height: titleRowPx,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 20,
+          fontWeight: 700,
+          color: "#1e293b",
+        }}
+      >
+        {title}
+      </div>
       {logoDataUrl && (
         <div
           style={{
             position: "absolute",
             left: marginPx,
             right: marginPx,
-            top: marginPx,
+            top: marginPx + titleRowPx,
             height: logoRowPx - 24,
             display: "flex",
             alignItems: "center",

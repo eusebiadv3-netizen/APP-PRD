@@ -447,19 +447,19 @@ h1 {
 
 .org-node-title {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   line-height: 1.25;
   color: var(--color-text);
 }
 
 .org-node-name {
-  font-size: 0.95rem;
+  font-size: 1.1rem;
   color: var(--color-muted);
-  margin-top: 0.2rem;
+  margin-top: 0.25rem;
 }
 
 .org-node-status {
-  font-size: 0.78rem;
+  font-size: 0.85rem;
   margin-top: 0.35rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -468,7 +468,7 @@ h1 {
 
 .org-node-type-label {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: var(--color-outsourcing-text);
 }
 

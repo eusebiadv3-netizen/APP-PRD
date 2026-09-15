@@ -31,9 +31,18 @@ export default function DownloadControls({
   const [busy, setBusy] = useState<BusyAction>(null);
   const [error, setError] = useState<string | null>(null);
 
+  function currentAreaNode(): OrgNode | null {
+    return viewRootId ? allNodes.find((n) => n.id === viewRootId) ?? null : null;
+  }
+
   function currentFilename(): string {
-    const rootNode = viewRootId ? allNodes.find((n) => n.id === viewRootId) : null;
+    const rootNode = currentAreaNode();
     return rootNode ? `organigrama-${slugify(rootNode.title)}` : "organigrama-completo";
+  }
+
+  function currentTitle(): string {
+    const rootNode = currentAreaNode();
+    return rootNode ? `Organigrama de ${rootNode.title}` : "Organigrama completo";
   }
 
   async function run(action: BusyAction, task: () => Promise<void>) {
@@ -94,21 +103,29 @@ export default function DownloadControls({
       <button
         className="btn-primary"
         disabled={busy !== null}
-        onClick={() => run("png", () => exportOrgChartAsPng(exportNodes, currentFilename(), logoDataUrl, pageSize))}
+        onClick={() =>
+          run("png", () =>
+            exportOrgChartAsPng(exportNodes, currentFilename(), logoDataUrl, pageSize, currentTitle())
+          )
+        }
       >
         {busy === "png" ? "Generando imagen..." : "Descargar imagen (PNG)"}
       </button>
       <button
         className="btn-secondary"
         disabled={busy !== null}
-        onClick={() => run("pdf", () => exportOrgChartAsPdf(exportNodes, currentFilename(), logoDataUrl, pageSize))}
+        onClick={() =>
+          run("pdf", () =>
+            exportOrgChartAsPdf(exportNodes, currentFilename(), logoDataUrl, pageSize, currentTitle())
+          )
+        }
       >
         {busy === "pdf" ? "Generando PDF..." : "Descargar PDF"}
       </button>
       <button
         className="btn-secondary"
         disabled={busy !== null}
-        onClick={() => run("print", () => printOrgChart(exportNodes, logoDataUrl, pageSize))}
+        onClick={() => run("print", () => printOrgChart(exportNodes, logoDataUrl, pageSize, currentTitle()))}
       >
         {busy === "print" ? "Preparando impresión..." : "Imprimir"}
       </button>

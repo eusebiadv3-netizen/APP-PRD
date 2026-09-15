@@ -21,7 +21,8 @@ interface RenderedPage {
 async function renderPrintPageToDataUrl(
   nodes: OrgNode[],
   logoDataUrl: string | null,
-  pageSize: PageSize
+  pageSize: PageSize,
+  title: string
 ): Promise<RenderedPage> {
   const { width: contentWidth, height: contentHeight } = computeLayout(nodes);
   const layout = computePrintPageLayout(contentWidth, contentHeight, !!logoDataUrl, pageSize);
@@ -41,6 +42,7 @@ async function renderPrintPageToDataUrl(
         contentWidth={contentWidth}
         contentHeight={contentHeight}
         logoDataUrl={logoDataUrl}
+        title={title}
       />
     );
 
@@ -67,9 +69,10 @@ export async function exportOrgChartAsPng(
   nodes: OrgNode[],
   filename: string,
   logoDataUrl: string | null,
-  pageSize: PageSize
+  pageSize: PageSize,
+  title: string
 ): Promise<void> {
-  const { dataUrl } = await renderPrintPageToDataUrl(nodes, logoDataUrl, pageSize);
+  const { dataUrl } = await renderPrintPageToDataUrl(nodes, logoDataUrl, pageSize, title);
   await saveGeneratedFile(dataUrl, filename);
 }
 
@@ -77,9 +80,10 @@ export async function exportOrgChartAsPdf(
   nodes: OrgNode[],
   filename: string,
   logoDataUrl: string | null,
-  pageSize: PageSize
+  pageSize: PageSize,
+  title: string
 ): Promise<void> {
-  const { dataUrl, layout } = await renderPrintPageToDataUrl(nodes, logoDataUrl, pageSize);
+  const { dataUrl, layout } = await renderPrintPageToDataUrl(nodes, logoDataUrl, pageSize, title);
   const widthIn = layout.pageWidth / 96;
   const heightIn = layout.pageHeight / 96;
   const doc = new jsPDF({
@@ -102,7 +106,8 @@ export async function exportOrgChartAsPdf(
 export async function printOrgChart(
   nodes: OrgNode[],
   logoDataUrl: string | null,
-  pageSize: PageSize
+  pageSize: PageSize,
+  title: string
 ): Promise<void> {
   const { width: contentWidth, height: contentHeight } = computeLayout(nodes);
   const layout = computePrintPageLayout(contentWidth, contentHeight, !!logoDataUrl, pageSize);
@@ -123,6 +128,7 @@ export async function printOrgChart(
       contentWidth={contentWidth}
       contentHeight={contentHeight}
       logoDataUrl={logoDataUrl}
+      title={title}
     />
   );
 

@@ -1,6 +1,7 @@
 export const LETTER_DPI = 96;
 export const PAGE_MARGIN_IN = 0.5;
 export const LOGO_ROW_IN = 1.3;
+export const TITLE_ROW_IN = 0.5;
 const MAX_CONTENT_SCALE = 2;
 
 export type PageSize = "carta" | "oficio";
@@ -27,6 +28,7 @@ export interface PrintPageLayout {
   pageWidth: number;
   pageHeight: number;
   marginPx: number;
+  titleRowPx: number;
   logoRowPx: number;
   scale: number;
   offsetX: number;
@@ -37,7 +39,7 @@ export interface PrintPageLayout {
  * Picks whichever orientation of the chosen page size (Carta/Oficio,
  * portrait/landscape) fits the chart's natural size with the least
  * shrinking, then returns everything needed to center it inside a 0.5in
- * margin (plus a reserved logo row).
+ * margin (below a title row, and a reserved logo row when there's a logo).
  */
 export function computePrintPageLayout(
   contentWidth: number,
@@ -46,18 +48,29 @@ export function computePrintPageLayout(
   pageSize: PageSize = "carta"
 ): PrintPageLayout {
   const marginPx = Math.round(PAGE_MARGIN_IN * LETTER_DPI);
+  const titleRowPx = Math.round(TITLE_ROW_IN * LETTER_DPI);
   const logoRowPx = hasLogo ? Math.round(LOGO_ROW_IN * LETTER_DPI) : 0;
+  const topReservedPx = titleRowPx + logoRowPx;
 
   let best: PrintPageLayout | null = null;
   for (const o of orientationsFor(pageSize)) {
     const pageWidth = Math.round(o.w * LETTER_DPI);
     const pageHeight = Math.round(o.h * LETTER_DPI);
     const availW = pageWidth - 2 * marginPx;
-    const availH = pageHeight - 2 * marginPx - logoRowPx;
+    const availH = pageHeight - 2 * marginPx - topReservedPx;
     const scale = Math.min(availW / contentWidth, availH / contentHeight, MAX_CONTENT_SCALE);
     const offsetX = marginPx + (availW - contentWidth * scale) / 2;
-    const offsetY = marginPx + logoRowPx + (availH - contentHeight * scale) / 2;
-    const candidate: PrintPageLayout = { pageWidth, pageHeight, marginPx, logoRowPx, scale, offsetX, offsetY };
+    const offsetY = marginPx + topReservedPx + (availH - contentHeight * scale) / 2;
+    const candidate: PrintPageLayout = {
+      pageWidth,
+      pageHeight,
+      marginPx,
+      titleRowPx,
+      logoRowPx,
+      scale,
+      offsetX,
+      offsetY,
+    };
     if (!best || candidate.scale > best.scale) best = candidate;
   }
   return best!;
