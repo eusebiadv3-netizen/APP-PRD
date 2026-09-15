@@ -88,6 +88,18 @@ export function getRootIds(nodes: OrgNode[]): string[] {
   return nodes.filter((n) => !n.managerId).map((n) => n.id);
 }
 
+/**
+ * Roots for LAYOUT purposes: a true root (no manager) OR a node whose
+ * manager isn't part of this set — e.g. a "solo jefe directo" area view,
+ * where that manager still carries its real (unrendered) managerId so
+ * OrgChart can draw a stub line above it. Without this, such a node would
+ * never get positioned at all (computeLayout only walks down from roots).
+ */
+export function getLayoutRootIds(nodes: OrgNode[]): string[] {
+  const ids = new Set(nodes.map((n) => n.id));
+  return nodes.filter((n) => !n.managerId || !ids.has(n.managerId)).map((n) => n.id);
+}
+
 /** All descendant ids of a node (inclusive of the node itself). */
 export function getSubtreeIds(nodes: OrgNode[], rootId: string): Set<string> {
   const childrenMap = getChildrenMap(nodes);

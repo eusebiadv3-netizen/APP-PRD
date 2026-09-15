@@ -113,8 +113,11 @@ export default function App() {
 
   // An "area" view always shows the head's full subtree (everyone who
   // reports to them). Above that, it shows either just the direct manager
-  // (capped there, so this view stops one level up) or the full chain up
-  // to the company's top — never the managers' other branches either way.
+  // or the full chain up to the company's top — never the managers' other
+  // branches either way. In "direct" mode the manager keeps its real
+  // managerId (pointing to someone not in this set) rather than having it
+  // cleared, so OrgChart draws a stub line above that box showing it still
+  // reports to someone, without revealing who.
   const chartNodes = useMemo(() => {
     if (!viewRootId) return nodes;
     const subtreeIds = getSubtreeIds(nodes, viewRootId);
@@ -122,7 +125,7 @@ export default function App() {
     const ancestors = getAncestors(nodes, viewRootId);
     if (ancestors.length === 0) return subtreeNodes;
     if (chainMode === "full") return [...ancestors, ...subtreeNodes];
-    return [{ ...ancestors[0], managerId: null }, ...subtreeNodes];
+    return [ancestors[0], ...subtreeNodes];
   }, [nodes, viewRootId, chainMode]);
 
   return (
@@ -203,8 +206,6 @@ export default function App() {
                 <OrgChart
                   nodes={chartNodes}
                   onNodeClick={(clicked) => {
-                    // chartNodes may show a fabricated root (see above) for the
-                    // filtered view; edit the real node so its true manager loads.
                     setEditingNode(nodes.find((n) => n.id === clicked.id) ?? clicked);
                   }}
                 />

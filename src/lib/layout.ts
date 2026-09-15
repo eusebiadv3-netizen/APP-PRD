@@ -1,10 +1,18 @@
 import type { OrgNode } from "../types";
-import { getChildrenMap, getRootIds } from "./hierarchy";
+import { getChildrenMap, getLayoutRootIds } from "./hierarchy";
 
 export const BOX_WIDTH = 240;
 export const BOX_HEIGHT = 116;
 export const H_GAP = 32;
 export const V_GAP = 70;
+
+/**
+ * A layout root can still carry a real (unrendered) managerId — e.g. a
+ * "solo jefe directo" area view. STUB_LENGTH reserves headroom above it so
+ * OrgChart can draw a short, unconnected line showing it still reports to
+ * someone, without revealing who.
+ */
+export const STUB_LENGTH = 32;
 
 export interface NodePosition {
   x: number;
@@ -15,6 +23,8 @@ export interface LayoutResult {
   positions: Record<string, NodePosition>;
   width: number;
   height: number;
+  /** ids of nodes that need a stub line drawn above them (see STUB_LENGTH) */
+  stubIds: Set<string>;
 }
 
 /**
@@ -24,7 +34,7 @@ export interface LayoutResult {
  */
 export function computeLayout(nodes: OrgNode[]): LayoutResult {
   const childrenMap = getChildrenMap(nodes);
-  const roots = getRootIds(nodes);
+  const roots = getLayoutRootIds(nodes);
   const positions: Record<string, NodePosition> = {};
 
   let nextSlot = 0;
@@ -44,11 +54,19 @@ export function computeLayout(nodes: OrgNode[]): LayoutResult {
 
   roots.forEach((r) => assign(r, 0));
 
+  // A layout root with a real managerId means that manager exists but isn't
+  // part of this node set — reserve stub headroom and shift everything down.
+  const stubIds = new Set(nodes.filter((n) => n.managerId && !positions[n.managerId]).map((n) => n.id));
+  const topOffset = stubIds.size > 0 ? STUB_LENGTH : 0;
+  if (topOffset) {
+    for (const id in positions) positions[id].y += topOffset;
+  }
+
   const maxDepth = Object.keys(positions).length
     ? Math.max(...Object.values(positions).map((p) => p.y))
     : 0;
   const width = Math.max(nextSlot * (BOX_WIDTH + H_GAP), BOX_WIDTH) - H_GAP;
   const height = maxDepth + BOX_HEIGHT;
 
-  return { positions, width: Math.max(width, BOX_WIDTH), height };
+  return { positions, width: Math.max(width, BOX_WIDTH), height, stubIds };
 }
