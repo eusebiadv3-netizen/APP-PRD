@@ -101,6 +101,22 @@ export function getSubtreeIds(nodes: OrgNode[], rootId: string): Set<string> {
   return result;
 }
 
+/** A node's managers, nearest first, up to (and including) the top of the org. */
+export function getAncestors(nodes: OrgNode[], nodeId: string): OrgNode[] {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const result: OrgNode[] = [];
+  const seen = new Set<string>();
+  let current = byId.get(nodeId);
+  while (current?.managerId && !seen.has(current.managerId)) {
+    const manager = byId.get(current.managerId);
+    if (!manager) break;
+    result.push(manager);
+    seen.add(manager.id);
+    current = manager;
+  }
+  return result;
+}
+
 export function createNode(
   title: string,
   name: string,

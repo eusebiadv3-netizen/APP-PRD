@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AppStep, OrgNode, ParsedRow, PositionStatus, SavedChart } from "./types";
-import { buildInitialNodes, getSubtreeIds, createNode, deleteNode } from "./lib/hierarchy";
+import { buildInitialNodes, getSubtreeIds, getAncestors, createNode, deleteNode } from "./lib/hierarchy";
 import { loadPersistedState, savePersistedState, clearPersistedState } from "./lib/persistence";
 import { saveChart, makeChartId } from "./lib/db";
 import FileUpload from "./components/FileUpload";
@@ -33,6 +33,7 @@ export default function App() {
   const [viewRootId, setViewRootId] = useState<string | null>(
     () => loadPersistedState()?.viewRootId ?? null
   );
+  const [chainMode, setChainMode] = useState<"direct" | "full">("direct");
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(
     () => loadPersistedState()?.logoDataUrl ?? null
   );
@@ -109,20 +110,19 @@ export default function App() {
     clearPersistedState();
   }
 
-  // An "area" view shows the area head's own manager (so it's clear who the
-  // area reports to) plus the head's full subtree (everyone who reports to
-  // them) — never the manager's other branches, and never further up than
-  // that one direct manager.
+  // An "area" view always shows the head's full subtree (everyone who
+  // reports to them). Above that, it shows either just the direct manager
+  // (capped there, so this view stops one level up) or the full chain up
+  // to the company's top — never the managers' other branches either way.
   const chartNodes = useMemo(() => {
     if (!viewRootId) return nodes;
     const subtreeIds = getSubtreeIds(nodes, viewRootId);
     const subtreeNodes = nodes.filter((n) => subtreeIds.has(n.id));
-    const areaHead = nodes.find((n) => n.id === viewRootId);
-    const managerNode = areaHead?.managerId ? nodes.find((n) => n.id === areaHead.managerId) : null;
-    if (!managerNode) return subtreeNodes;
-    // Shown without ITS OWN manager, so this filtered view stops one level up.
-    return [{ ...managerNode, managerId: null }, ...subtreeNodes];
-  }, [nodes, viewRootId]);
+    const ancestors = getAncestors(nodes, viewRootId);
+    if (ancestors.length === 0) return subtreeNodes;
+    if (chainMode === "full") return [...ancestors, ...subtreeNodes];
+    return [{ ...ancestors[0], managerId: null }, ...subtreeNodes];
+  }, [nodes, viewRootId, chainMode]);
 
   return (
     <div className="app">
@@ -195,6 +195,8 @@ export default function App() {
                 logoDataUrl={logoDataUrl}
                 viewRootId={viewRootId}
                 onViewRootChange={setViewRootId}
+                chainMode={chainMode}
+                onChainModeChange={setChainMode}
               />
               <div className="chart-scroll">
                 <OrgChart

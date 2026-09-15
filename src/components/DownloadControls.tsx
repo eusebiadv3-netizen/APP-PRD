@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { OrgNode } from "../types";
 import { slugify, DownloadCancelledError } from "../lib/exportImage";
-import { exportOrgChartAsLetterPng } from "../lib/exportChart";
+import { exportOrgChartAsPng, exportOrgChartAsPdf, printOrgChart } from "../lib/exportChart";
+import { PAGE_SIZE_LABEL, type PageSize } from "../lib/printExport";
 
 const FULL_VALUE = "__full__";
 
@@ -11,7 +12,11 @@ interface Props {
   logoDataUrl: string | null;
   viewRootId: string | null;
   onViewRootChange: (id: string | null) => void;
+  chainMode: "direct" | "full";
+  onChainModeChange: (mode: "direct" | "full") => void;
 }
+
+type BusyAction = "png" | "pdf" | "print" | null;
 
 export default function DownloadControls({
   allNodes,
@@ -19,25 +24,29 @@ export default function DownloadControls({
   logoDataUrl,
   viewRootId,
   onViewRootChange,
+  chainMode,
+  onChainModeChange,
 }: Props) {
-  const [downloading, setDownloading] = useState(false);
+  const [pageSize, setPageSize] = useState<PageSize>("carta");
+  const [busy, setBusy] = useState<BusyAction>(null);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleDownload() {
-    setDownloading(true);
+  function currentFilename(): string {
+    const rootNode = viewRootId ? allNodes.find((n) => n.id === viewRootId) : null;
+    return rootNode ? `organigrama-${slugify(rootNode.title)}` : "organigrama-completo";
+  }
+
+  async function run(action: BusyAction, task: () => Promise<void>) {
+    setBusy(action);
     setError(null);
     try {
-      const rootNode = viewRootId ? allNodes.find((n) => n.id === viewRootId) : null;
-      const filename = rootNode
-        ? `organigrama-${slugify(rootNode.title)}`
-        : "organigrama-completo";
-      await exportOrgChartAsLetterPng(exportNodes, filename, logoDataUrl);
+      await task();
     } catch (e) {
       if (!(e instanceof DownloadCancelledError)) {
-        setError(e instanceof Error ? e.message : "No se pudo descargar la imagen.");
+        setError(e instanceof Error ? e.message : "No se pudo completar la acción.");
       }
     } finally {
-      setDownloading(false);
+      setBusy(null);
     }
   }
 
@@ -57,8 +66,51 @@ export default function DownloadControls({
           ))}
         </select>
       </label>
-      <button className="btn-primary" onClick={handleDownload} disabled={downloading}>
-        {downloading ? "Generando imagen..." : "Descargar imagen (PNG, tamaño carta)"}
+
+      {viewRootId && (
+        <label className="view-select">
+          Mostrar hacia arriba:
+          <select
+            value={chainMode}
+            onChange={(e) => onChainModeChange(e.target.value as "direct" | "full")}
+          >
+            <option value="direct">Solo el jefe directo</option>
+            <option value="full">Cadena completa hasta la cabeza</option>
+          </select>
+        </label>
+      )}
+
+      <label className="view-select">
+        Tamaño de página:
+        <select value={pageSize} onChange={(e) => setPageSize(e.target.value as PageSize)}>
+          {(Object.keys(PAGE_SIZE_LABEL) as PageSize[]).map((size) => (
+            <option key={size} value={size}>
+              {PAGE_SIZE_LABEL[size]}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <button
+        className="btn-primary"
+        disabled={busy !== null}
+        onClick={() => run("png", () => exportOrgChartAsPng(exportNodes, currentFilename(), logoDataUrl, pageSize))}
+      >
+        {busy === "png" ? "Generando imagen..." : "Descargar imagen (PNG)"}
+      </button>
+      <button
+        className="btn-secondary"
+        disabled={busy !== null}
+        onClick={() => run("pdf", () => exportOrgChartAsPdf(exportNodes, currentFilename(), logoDataUrl, pageSize))}
+      >
+        {busy === "pdf" ? "Generando PDF..." : "Descargar PDF"}
+      </button>
+      <button
+        className="btn-secondary"
+        disabled={busy !== null}
+        onClick={() => run("print", () => printOrgChart(exportNodes, logoDataUrl, pageSize))}
+      >
+        {busy === "print" ? "Preparando impresión..." : "Imprimir"}
       </button>
       {error && <span className="download-error">{error}</span>}
     </div>

@@ -651,3 +651,17 @@ h1 {
   gap: 0.75rem;
   flex-shrink: 0;
 }
+
+.print-capture-root {
+  display: none;
+}
+
+@media print {
+  body > *:not(.print-capture-root) {
+    display: none !important;
+  }
+  .print-capture-root {
+    display: block !important;
+    position: static !important;
+  }
+}
