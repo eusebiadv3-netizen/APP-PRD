@@ -1,4 +1,4 @@
-import type { OrgNode, ParsedRow, PositionStatus } from "../types";
+import type { OrgNode, ParsedRow, PositionStatus, PositionType } from "../types";
 
 function makeId(index: number): string {
   return `n${index}`;
@@ -27,6 +27,7 @@ export function buildInitialNodes(rows: ParsedRow[]): OrgNode[] {
     title: row.title,
     name: row.name,
     status: row.status,
+    positionType: row.positionType,
     managerId: null,
     confirmed: false,
   }));
@@ -121,9 +122,10 @@ export function createNode(
   title: string,
   name: string,
   status: PositionStatus,
+  positionType: PositionType,
   managerId: string | null
 ): OrgNode {
-  return { id: makeNewNodeId(), title, name, status, managerId, confirmed: true };
+  return { id: makeNewNodeId(), title, name, status, positionType, managerId, confirmed: true };
 }
 
 /**

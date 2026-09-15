@@ -1,9 +1,15 @@
 import { useState } from "react";
-import type { OrgNode, PositionStatus } from "../types";
+import type { OrgNode, PositionStatus, PositionType } from "../types";
 
 interface Props {
   allNodes: OrgNode[];
-  onAdd: (title: string, name: string, status: PositionStatus, managerId: string | null) => void;
+  onAdd: (
+    title: string,
+    name: string,
+    status: PositionStatus,
+    positionType: PositionType,
+    managerId: string | null
+  ) => void;
   onClose: () => void;
 }
 
@@ -13,6 +19,7 @@ export default function AddPositionModal({ allNodes, onAdd, onClose }: Props) {
   const [title, setTitle] = useState("");
   const [name, setName] = useState("");
   const [status, setStatus] = useState<PositionStatus>("ocupado");
+  const [positionType, setPositionType] = useState<PositionType>("normal");
   const [managerId, setManagerId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +29,7 @@ export default function AddPositionModal({ allNodes, onAdd, onClose }: Props) {
       return;
     }
     const isVacant = status !== "ocupado";
-    onAdd(title.trim(), isVacant ? "" : name.trim(), status, managerId);
+    onAdd(title.trim(), isVacant ? "" : name.trim(), status, positionType, managerId);
   }
 
   return (
@@ -40,6 +47,17 @@ export default function AddPositionModal({ allNodes, onAdd, onClose }: Props) {
             <option value="ocupado">Ocupado</option>
             <option value="vacante-activa">Vacante (activa)</option>
             <option value="vacante-inactiva">Vacante (inactiva)</option>
+          </select>
+        </label>
+        <label>
+          Tipo de posición
+          <select
+            value={positionType}
+            onChange={(e) => setPositionType(e.target.value as PositionType)}
+          >
+            <option value="normal">Normal (línea de mando)</option>
+            <option value="staff">Staff / Asesoría (línea punteada)</option>
+            <option value="outsourcing">Outsourcing (contrato externo)</option>
           </select>
         </label>
         <label>

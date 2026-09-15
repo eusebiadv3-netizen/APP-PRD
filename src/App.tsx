@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { AppStep, OrgNode, ParsedRow, PositionStatus, SavedChart } from "./types";
+import type { AppStep, OrgNode, ParsedRow, PositionStatus, PositionType, SavedChart } from "./types";
 import { buildInitialNodes, getSubtreeIds, getAncestors, createNode, deleteNode } from "./lib/hierarchy";
 import { loadPersistedState, savePersistedState, clearPersistedState } from "./lib/persistence";
 import { saveChart, makeChartId } from "./lib/db";
@@ -93,9 +93,10 @@ export default function App() {
     title: string,
     name: string,
     status: PositionStatus,
+    positionType: PositionType,
     managerId: string | null
   ) {
-    setNodes((prev) => [...prev, createNode(title, name, status, managerId)]);
+    setNodes((prev) => [...prev, createNode(title, name, status, positionType, managerId)]);
     setAddingPosition(false);
   }
 

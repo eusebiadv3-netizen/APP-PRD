@@ -15,8 +15,12 @@ const statusLabel: Record<OrgNode["status"], string> = {
 };
 
 export default function OrgChartNode({ node, x, y, onClick }: Props) {
-  const statusClass =
-    node.status === "vacante-activa"
+  // Outsourcing gets its own distinct color regardless of vacancy status;
+  // otherwise the box color follows whether the position is filled/vacant.
+  const variantClass =
+    node.positionType === "outsourcing"
+      ? "node-outsourcing"
+      : node.status === "vacante-activa"
       ? "node-vacant-active"
       : node.status === "vacante-inactiva"
       ? "node-vacant-inactive"
@@ -24,13 +28,18 @@ export default function OrgChartNode({ node, x, y, onClick }: Props) {
 
   return (
     <div
-      className={`org-node ${statusClass}`}
+      className={`org-node ${variantClass}`}
       style={{ left: x, top: y, width: BOX_WIDTH, height: BOX_HEIGHT }}
       onClick={() => onClick(node)}
       role="button"
       tabIndex={0}
     >
-      <div className="org-node-title">{node.title}</div>
+      <div className="org-node-title">
+        {node.title}
+        {node.positionType === "outsourcing" && (
+          <span className="org-node-type-label"> (Outsourcing)</span>
+        )}
+      </div>
       <div className="org-node-name">{node.name || "— Vacante —"}</div>
       {statusLabel[node.status] && <div className="org-node-status">{statusLabel[node.status]}</div>}
     </div>

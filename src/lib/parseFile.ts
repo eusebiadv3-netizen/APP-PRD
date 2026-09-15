@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import type { ParsedRow, PositionStatus } from "../types";
+import type { ParsedRow, PositionStatus, PositionType } from "../types";
 
 export class FileParseError extends Error {}
 
@@ -16,6 +16,7 @@ const MANAGER_KEYS = [
   "reporta",
 ];
 const STATUS_KEYS = ["estado", "status"];
+const TYPE_KEYS = ["tipo", "type"];
 
 function normalizeHeader(header: string): string {
   return header
@@ -47,6 +48,14 @@ function parseStatus(raw: string | undefined): PositionStatus {
   if (v.includes("vacante") && v.includes("activ")) return "vacante-activa";
   if (v.includes("vacante")) return "vacante-activa";
   return "ocupado";
+}
+
+function parsePositionType(raw: string | undefined): PositionType {
+  if (!raw) return "normal";
+  const v = normalizeHeader(raw);
+  if (v.includes("outsourcing") || v.includes("externo") || v.includes("contrat")) return "outsourcing";
+  if (v.includes("staff") || v.includes("asesor")) return "staff";
+  return "normal";
 }
 
 export async function parseOrgFile(file: File): Promise<ParsedRow[]> {
@@ -86,6 +95,7 @@ export async function parseOrgFile(file: File): Promise<ParsedRow[]> {
   const nameCol = findColumn(headers, NAME_KEYS);
   const managerCol = findColumn(headers, MANAGER_KEYS);
   const statusCol = findColumn(headers, STATUS_KEYS);
+  const typeCol = findColumn(headers, TYPE_KEYS);
 
   const parsed: ParsedRow[] = [];
   for (const row of rows) {
@@ -94,7 +104,14 @@ export async function parseOrgFile(file: File): Promise<ParsedRow[]> {
     const name = nameCol ? String(row[nameCol] ?? "").trim() : "";
     const managerHint = managerCol ? String(row[managerCol] ?? "").trim() : "";
     const status = parseStatus(statusCol ? String(row[statusCol] ?? "") : undefined);
-    parsed.push({ title, name, managerHint, status: name ? status : status === "ocupado" ? "vacante-activa" : status });
+    const positionType = parsePositionType(typeCol ? String(row[typeCol] ?? "") : undefined);
+    parsed.push({
+      title,
+      name,
+      managerHint,
+      positionType,
+      status: name ? status : status === "ocupado" ? "vacante-activa" : status,
+    });
   }
 
   if (!parsed.length) {

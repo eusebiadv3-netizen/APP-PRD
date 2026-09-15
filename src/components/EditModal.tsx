@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { OrgNode, PositionStatus } from "../types";
+import type { OrgNode, PositionStatus, PositionType } from "../types";
 import { getSubtreeIds } from "../lib/hierarchy";
 
 interface Props {
@@ -16,6 +16,7 @@ export default function EditModal({ node, allNodes, onSave, onDelete, onClose }:
   const [title, setTitle] = useState(node.title);
   const [name, setName] = useState(node.name);
   const [status, setStatus] = useState<PositionStatus>(node.status);
+  const [positionType, setPositionType] = useState<PositionType>(node.positionType);
   const [managerId, setManagerId] = useState<string | null>(node.managerId);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteStrategy, setDeleteStrategy] = useState<"reassign" | "root">("reassign");
@@ -34,6 +35,7 @@ export default function EditModal({ node, allNodes, onSave, onDelete, onClose }:
       title: title.trim() || node.title,
       name: isVacant ? "" : name.trim(),
       status,
+      positionType,
       managerId,
     });
   }
@@ -108,6 +110,17 @@ export default function EditModal({ node, allNodes, onSave, onDelete, onClose }:
             <option value="ocupado">Ocupado</option>
             <option value="vacante-activa">Vacante (activa)</option>
             <option value="vacante-inactiva">Vacante (inactiva)</option>
+          </select>
+        </label>
+        <label>
+          Tipo de posición
+          <select
+            value={positionType}
+            onChange={(e) => setPositionType(e.target.value as PositionType)}
+          >
+            <option value="normal">Normal (línea de mando)</option>
+            <option value="staff">Staff / Asesoría (línea punteada)</option>
+            <option value="outsourcing">Outsourcing (contrato externo)</option>
           </select>
         </label>
         <label>

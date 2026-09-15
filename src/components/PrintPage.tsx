@@ -25,6 +25,9 @@ const LIGHT_TOKENS = {
   "--color-vacant-inactive": "#f1f5f9",
   "--color-vacant-inactive-border": "#94a3b8",
   "--color-vacant-inactive-text": "#475569",
+  "--color-outsourcing": "#ddd6fe",
+  "--color-outsourcing-border": "#7c3aed",
+  "--color-outsourcing-text": "#5b21b6",
   "--color-shadow": "rgba(0, 0, 0, 0.08)",
   "--color-shadow-hover": "rgba(0, 0, 0, 0.12)",
 } as CSSProperties;

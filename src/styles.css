@@ -17,6 +17,9 @@
   --color-vacant-inactive: #f1f5f9;
   --color-vacant-inactive-border: #94a3b8;
   --color-vacant-inactive-text: #475569;
+  --color-outsourcing: #ddd6fe;
+  --color-outsourcing-border: #7c3aed;
+  --color-outsourcing-text: #5b21b6;
   --color-error-bg: #fee2e2;
   --color-error-border: #fca5a5;
   --color-error-text: #991b1b;
@@ -48,6 +51,9 @@
     --color-vacant-inactive: #263041;
     --color-vacant-inactive-border: #64748b;
     --color-vacant-inactive-text: #cbd5e1;
+    --color-outsourcing: #4c3a7a;
+    --color-outsourcing-border: #8b5cf6;
+    --color-outsourcing-text: #c4b5fd;
     --color-error-bg: #4c1d1d;
     --color-error-border: #b91c1c;
     --color-error-text: #fca5a5;
@@ -78,6 +84,9 @@
   --color-vacant-inactive: #263041;
   --color-vacant-inactive-border: #64748b;
   --color-vacant-inactive-text: #cbd5e1;
+  --color-outsourcing: #4c3a7a;
+  --color-outsourcing-border: #8b5cf6;
+  --color-outsourcing-text: #c4b5fd;
   --color-error-bg: #4c1d1d;
   --color-error-border: #b91c1c;
   --color-error-text: #fca5a5;
@@ -457,6 +466,12 @@ h1 {
   letter-spacing: 0.03em;
 }
 
+.org-node-type-label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-outsourcing-text);
+}
+
 .node-occupied {
   border-color: var(--color-primary);
 }
@@ -479,6 +494,16 @@ h1 {
 
 .node-vacant-inactive .org-node-status {
   color: var(--color-vacant-inactive-text);
+}
+
+.node-outsourcing {
+  border-width: 3px;
+  border-color: var(--color-outsourcing-border);
+  background: var(--color-outsourcing);
+}
+
+.node-outsourcing .org-node-status {
+  color: var(--color-outsourcing-text);
 }
 
 /* Modal */

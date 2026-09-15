@@ -23,16 +23,29 @@ export default function OrgChart({ nodes, onNodeClick }: Props) {
         const x2 = to.x + BOX_WIDTH / 2;
         const y2 = to.y;
         const midY = (y1 + y2) / 2;
-        return { id: n.id, path: `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}` };
+        return {
+          id: n.id,
+          path: `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`,
+          // Staff/advisory positions connect with a dashed line, since
+          // they advise this level rather than being in the chain of command.
+          dashed: n.positionType === "staff",
+        };
       })
-      .filter((l): l is { id: string; path: string } => l !== null);
+      .filter((l): l is { id: string; path: string; dashed: boolean } => l !== null);
   }, [nodes, positions]);
 
   return (
     <div className="org-chart-canvas" style={{ width, height, position: "relative" }}>
       <svg className="org-chart-lines" width={width} height={height}>
         {lines.map((l) => (
-          <path key={l.id} d={l.path} fill="none" stroke="#94a3b8" strokeWidth={2} />
+          <path
+            key={l.id}
+            d={l.path}
+            fill="none"
+            stroke="#94a3b8"
+            strokeWidth={2}
+            strokeDasharray={l.dashed ? "6 5" : undefined}
+          />
         ))}
       </svg>
       {nodes.map((node) => {
