@@ -8,6 +8,8 @@ export interface PersistedState {
   nodes: OrgNode[];
   logoDataUrl: string | null;
   viewRootId: string | null;
+  chartId: string | null;
+  companyName: string;
 }
 
 /**

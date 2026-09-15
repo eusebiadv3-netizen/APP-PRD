@@ -18,3 +18,11 @@ export interface ParsedRow {
 }
 
 export type AppStep = "upload" | "confirm" | "chart";
+
+export interface SavedChart {
+  id: string;
+  companyName: string;
+  nodes: OrgNode[];
+  logoDataUrl: string | null;
+  updatedAt: number;
+}

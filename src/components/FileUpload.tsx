@@ -4,9 +4,10 @@ import type { ParsedRow } from "../types";
 
 interface Props {
   onParsed: (rows: ParsedRow[]) => void;
+  onBrowseSaved: () => void;
 }
 
-export default function FileUpload({ onParsed }: Props) {
+export default function FileUpload({ onParsed, onBrowseSaved }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +68,9 @@ export default function FileUpload({ onParsed }: Props) {
         />
       </div>
       {error && <div className="error-banner">{error}</div>}
+      <button className="btn-secondary browse-saved-btn" onClick={onBrowseSaved}>
+        Ver organigramas guardados
+      </button>
     </div>
   );
 }

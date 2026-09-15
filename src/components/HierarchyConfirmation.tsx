@@ -4,14 +4,21 @@ import { validateHierarchy } from "../lib/hierarchy";
 
 interface Props {
   initialNodes: OrgNode[];
-  onConfirmed: (nodes: OrgNode[]) => void;
+  initialCompanyName: string;
+  onConfirmed: (nodes: OrgNode[], companyName: string) => void;
   onBack: () => void;
 }
 
 const ROOT_VALUE = "__root__";
 
-export default function HierarchyConfirmation({ initialNodes, onConfirmed, onBack }: Props) {
+export default function HierarchyConfirmation({
+  initialNodes,
+  initialCompanyName,
+  onConfirmed,
+  onBack,
+}: Props) {
   const [nodes, setNodes] = useState<OrgNode[]>(initialNodes);
+  const [companyName, setCompanyName] = useState(initialCompanyName);
   const [error, setError] = useState<string | null>(null);
 
   function setManager(nodeId: string, managerId: string | null) {
@@ -21,6 +28,10 @@ export default function HierarchyConfirmation({ initialNodes, onConfirmed, onBac
   }
 
   function handleSubmit() {
+    if (!companyName.trim()) {
+      setError("Escribe el nombre de la empresa para poder guardar y buscar este organigrama después.");
+      return;
+    }
     const allConfirmed = nodes.map((n) => ({ ...n, confirmed: true }));
     const err = validateHierarchy(allConfirmed);
     if (err) {
@@ -28,7 +39,7 @@ export default function HierarchyConfirmation({ initialNodes, onConfirmed, onBac
       setNodes(allConfirmed);
       return;
     }
-    onConfirmed(allConfirmed);
+    onConfirmed(allConfirmed, companyName.trim());
   }
 
   const rootCount = nodes.filter((n) => n.managerId === null).length;
@@ -42,6 +53,14 @@ export default function HierarchyConfirmation({ initialNodes, onConfirmed, onBac
         antes de continuar.
       </p>
       {error && <div className="error-banner">{error}</div>}
+      <label className="company-name-field">
+        Nombre de la empresa
+        <input
+          value={companyName}
+          onChange={(e) => setCompanyName(e.target.value)}
+          placeholder="Ej. Acme S.A."
+        />
+      </label>
       <div className="confirm-table-wrap">
         <table className="confirm-table">
           <thead>

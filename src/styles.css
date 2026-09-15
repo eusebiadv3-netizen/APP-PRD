@@ -156,11 +156,34 @@ h1 {
   text-align: left;
 }
 
+.browse-saved-btn {
+  margin-top: 1.5rem;
+}
+
 /* Confirm screen */
 .confirm-screen {
   max-width: 900px;
   margin: 3rem auto;
   padding: 0 1.5rem 3rem;
+}
+
+.company-name-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+  max-width: 320px;
+  margin-top: 1.25rem;
+}
+
+.company-name-field input {
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .confirm-table-wrap {
@@ -265,6 +288,37 @@ h1 {
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.chart-title-block {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.company-name-label {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--color-muted);
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+}
+
+.company-name-label:hover {
+  background: var(--color-surface-alt);
+  color: var(--color-text);
+}
+
+.company-name-inline-input {
+  font-size: 0.95rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .view-mode-toggle {
@@ -544,4 +598,56 @@ h1 {
 .positions-table th {
   background: var(--color-surface-alt);
   font-weight: 600;
+}
+
+.modal-wide {
+  width: 520px;
+}
+
+.search-input {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.saved-charts-list {
+  margin-top: 1rem;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.saved-chart-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.saved-chart-name {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.saved-chart-meta {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+  margin-top: 0.15rem;
+}
+
+.saved-chart-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
 }
