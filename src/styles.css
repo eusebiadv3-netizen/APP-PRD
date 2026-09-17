@@ -466,6 +466,13 @@ h1 {
   letter-spacing: 0.03em;
 }
 
+.org-node-interim {
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  font-style: italic;
+  color: var(--color-vacant-inactive-text);
+}
+
 .org-node-type-label {
   font-weight: 600;
   font-size: 0.95rem;

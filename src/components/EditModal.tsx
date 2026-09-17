@@ -17,6 +17,7 @@ export default function EditModal({ node, allNodes, onSave, onDelete, onClose }:
   const [name, setName] = useState(node.name);
   const [status, setStatus] = useState<PositionStatus>(node.status);
   const [positionType, setPositionType] = useState<PositionType>(node.positionType);
+  const [interimName, setInterimName] = useState(node.interimName);
   const [managerId, setManagerId] = useState<string | null>(node.managerId);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleteStrategy, setDeleteStrategy] = useState<"reassign" | "root">("reassign");
@@ -36,6 +37,7 @@ export default function EditModal({ node, allNodes, onSave, onDelete, onClose }:
       name: isVacant ? "" : name.trim(),
       status,
       positionType,
+      interimName: status === "vacante-inactiva" ? interimName.trim() : "",
       managerId,
     });
   }
@@ -130,6 +132,19 @@ export default function EditModal({ node, allNodes, onSave, onDelete, onClose }:
             onChange={(e) => setName(e.target.value)}
             disabled={status !== "ocupado"}
             placeholder={status !== "ocupado" ? "Vacante" : ""}
+          />
+        </label>
+        <label>
+          Encargado temporal
+          <input
+            value={interimName}
+            onChange={(e) => setInterimName(e.target.value)}
+            disabled={status !== "vacante-inactiva"}
+            placeholder={
+              status === "vacante-inactiva"
+                ? "Nombre de quien cubre el cargo"
+                : "Solo aplica a vacante inactiva"
+            }
           />
         </label>
         <label>

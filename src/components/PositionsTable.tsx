@@ -61,6 +61,7 @@ export default function PositionsTable({ nodes }: Props) {
               <th>Cargo</th>
               <th>Nombre</th>
               <th>Estado</th>
+              <th>Encargado temporal</th>
               <th>Reporta a</th>
             </tr>
           </thead>
@@ -70,6 +71,7 @@ export default function PositionsTable({ nodes }: Props) {
                 <td>{n.title}</td>
                 <td>{n.name || <em>Vacante</em>}</td>
                 <td>{STATUS_LABEL[n.status]}</td>
+                <td>{n.interimName || ""}</td>
                 <td>{managerLabel(n, nodes)}</td>
               </tr>
             ))}

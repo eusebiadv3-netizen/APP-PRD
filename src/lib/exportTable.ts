@@ -21,10 +21,11 @@ export async function exportPositionsAsXlsx(nodes: OrgNode[], filename: string):
     Cargo: n.title,
     Nombre: n.name,
     Estado: STATUS_LABELS[n.status],
+    "Encargado temporal": n.interimName,
     "Reporta a": managerLabel(n, nodes),
   }));
   const worksheet = XLSX.utils.json_to_sheet(rows);
-  worksheet["!cols"] = [{ wch: 28 }, { wch: 22 }, { wch: 18 }, { wch: 32 }];
+  worksheet["!cols"] = [{ wch: 28 }, { wch: 22 }, { wch: 18 }, { wch: 24 }, { wch: 32 }];
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Cargos");
   const buffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" }) as ArrayBuffer;

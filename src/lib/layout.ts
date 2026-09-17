@@ -1,10 +1,10 @@
 import type { OrgNode } from "../types";
 import { getChildrenMap, getLayoutRootIds } from "./hierarchy";
 
-export const BOX_WIDTH = 240;
-export const BOX_HEIGHT = 116;
+export const BOX_WIDTH = 280;
+export const BOX_HEIGHT = 140;
 export const H_GAP = 32;
-export const V_GAP = 70;
+export const V_GAP = 76;
 
 /**
  * A layout root can still carry a real (unrendered) managerId — e.g. a

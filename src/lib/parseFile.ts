@@ -17,6 +17,7 @@ const MANAGER_KEYS = [
 ];
 const STATUS_KEYS = ["estado", "status"];
 const TYPE_KEYS = ["tipo", "type"];
+const INTERIM_KEYS = ["encargado temporal", "encargado", "interino", "temporal", "interim"];
 
 function normalizeHeader(header: string): string {
   return header
@@ -96,6 +97,7 @@ export async function parseOrgFile(file: File): Promise<ParsedRow[]> {
   const managerCol = findColumn(headers, MANAGER_KEYS);
   const statusCol = findColumn(headers, STATUS_KEYS);
   const typeCol = findColumn(headers, TYPE_KEYS);
+  const interimCol = findColumn(headers, INTERIM_KEYS);
 
   const parsed: ParsedRow[] = [];
   for (const row of rows) {
@@ -105,11 +107,13 @@ export async function parseOrgFile(file: File): Promise<ParsedRow[]> {
     const managerHint = managerCol ? String(row[managerCol] ?? "").trim() : "";
     const status = parseStatus(statusCol ? String(row[statusCol] ?? "") : undefined);
     const positionType = parsePositionType(typeCol ? String(row[typeCol] ?? "") : undefined);
+    const interimName = interimCol ? String(row[interimCol] ?? "").trim() : "";
     parsed.push({
       title,
       name,
       managerHint,
       positionType,
+      interimName: status === "vacante-inactiva" ? interimName : "",
       status: name ? status : status === "ocupado" ? "vacante-activa" : status,
     });
   }

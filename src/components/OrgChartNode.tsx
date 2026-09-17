@@ -29,7 +29,7 @@ export default function OrgChartNode({ node, x, y, onClick }: Props) {
   return (
     <div
       className={`org-node ${variantClass}`}
-      style={{ left: x, top: y, width: BOX_WIDTH, height: BOX_HEIGHT }}
+      style={{ left: x, top: y, width: BOX_WIDTH, minHeight: BOX_HEIGHT }}
       onClick={() => onClick(node)}
       role="button"
       tabIndex={0}
@@ -41,6 +41,9 @@ export default function OrgChartNode({ node, x, y, onClick }: Props) {
         )}
       </div>
       <div className="org-node-name">{node.name || "— Vacante —"}</div>
+      {node.status === "vacante-inactiva" && node.interimName && (
+        <div className="org-node-interim">Encargado temporal: {node.interimName}</div>
+      )}
       {statusLabel[node.status] && <div className="org-node-status">{statusLabel[node.status]}</div>}
     </div>
   );

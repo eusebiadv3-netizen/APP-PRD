@@ -102,9 +102,13 @@ export default function App() {
     name: string,
     status: PositionStatus,
     positionType: PositionType,
+    interimName: string,
     managerId: string | null
   ) {
-    setNodes((prev) => [...prev, createNode(title, name, status, positionType, managerId)]);
+    setNodes((prev) => [
+      ...prev,
+      createNode(title, name, status, positionType, interimName, managerId),
+    ]);
     setAddingPosition(false);
   }
 

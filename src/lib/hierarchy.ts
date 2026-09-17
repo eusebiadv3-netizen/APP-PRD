@@ -28,6 +28,7 @@ export function buildInitialNodes(rows: ParsedRow[]): OrgNode[] {
     name: row.name,
     status: row.status,
     positionType: row.positionType,
+    interimName: row.interimName,
     managerId: null,
     confirmed: false,
   }));
@@ -158,9 +159,19 @@ export function createNode(
   name: string,
   status: PositionStatus,
   positionType: PositionType,
+  interimName: string,
   managerId: string | null
 ): OrgNode {
-  return { id: makeNewNodeId(), title, name, status, positionType, managerId, confirmed: true };
+  return {
+    id: makeNewNodeId(),
+    title,
+    name,
+    status,
+    positionType,
+    interimName,
+    managerId,
+    confirmed: true,
+  };
 }
 
 /**

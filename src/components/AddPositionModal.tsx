@@ -8,6 +8,7 @@ interface Props {
     name: string,
     status: PositionStatus,
     positionType: PositionType,
+    interimName: string,
     managerId: string | null
   ) => void;
   onClose: () => void;
@@ -20,6 +21,7 @@ export default function AddPositionModal({ allNodes, onAdd, onClose }: Props) {
   const [name, setName] = useState("");
   const [status, setStatus] = useState<PositionStatus>("ocupado");
   const [positionType, setPositionType] = useState<PositionType>("normal");
+  const [interimName, setInterimName] = useState("");
   const [managerId, setManagerId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +31,14 @@ export default function AddPositionModal({ allNodes, onAdd, onClose }: Props) {
       return;
     }
     const isVacant = status !== "ocupado";
-    onAdd(title.trim(), isVacant ? "" : name.trim(), status, positionType, managerId);
+    onAdd(
+      title.trim(),
+      isVacant ? "" : name.trim(),
+      status,
+      positionType,
+      status === "vacante-inactiva" ? interimName.trim() : "",
+      managerId
+    );
   }
 
   return (
@@ -67,6 +76,19 @@ export default function AddPositionModal({ allNodes, onAdd, onClose }: Props) {
             onChange={(e) => setName(e.target.value)}
             disabled={status !== "ocupado"}
             placeholder={status !== "ocupado" ? "Vacante" : ""}
+          />
+        </label>
+        <label>
+          Encargado temporal
+          <input
+            value={interimName}
+            onChange={(e) => setInterimName(e.target.value)}
+            disabled={status !== "vacante-inactiva"}
+            placeholder={
+              status === "vacante-inactiva"
+                ? "Nombre de quien cubre el cargo"
+                : "Solo aplica a vacante inactiva"
+            }
           />
         </label>
         <label>
