@@ -130,6 +130,29 @@ export function getAncestors(nodes: OrgNode[], nodeId: string): OrgNode[] {
   return result;
 }
 
+/**
+ * Keeps only nodes up to `maxDepth` levels below this set's own layout
+ * roots (0 = just the roots themselves, 2 = roots + primera línea +
+ * segunda línea, etc.) — so a large org or area can still be printed
+ * legibly on one page. Depth is measured from whatever is currently at
+ * the top of THIS set (the whole org for "completo", or an area's head),
+ * not from the true top of the company.
+ */
+export function limitDepth(nodes: OrgNode[], maxDepth: number): OrgNode[] {
+  const childrenMap = getChildrenMap(nodes);
+  const roots = getLayoutRootIds(nodes);
+  const keep = new Set<string>();
+
+  function walk(id: string, depth: number) {
+    if (depth > maxDepth || keep.has(id)) return;
+    keep.add(id);
+    for (const childId of childrenMap[id] ?? []) walk(childId, depth + 1);
+  }
+  roots.forEach((r) => walk(r, 0));
+
+  return nodes.filter((n) => keep.has(n.id));
+}
+
 export function createNode(
   title: string,
   name: string,

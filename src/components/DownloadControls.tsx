@@ -14,7 +14,11 @@ interface Props {
   onViewRootChange: (id: string | null) => void;
   chainMode: "direct" | "full";
   onChainModeChange: (mode: "direct" | "full") => void;
+  depthLimit: number | null;
+  onDepthLimitChange: (depth: number | null) => void;
 }
+
+const DEPTH_ALL = "__all__";
 
 type BusyAction = "png" | "pdf" | "print" | null;
 
@@ -26,6 +30,8 @@ export default function DownloadControls({
   onViewRootChange,
   chainMode,
   onChainModeChange,
+  depthLimit,
+  onDepthLimitChange,
 }: Props) {
   const [pageSize, setPageSize] = useState<PageSize>("carta");
   const [busy, setBusy] = useState<BusyAction>(null);
@@ -88,6 +94,21 @@ export default function DownloadControls({
           </select>
         </label>
       )}
+
+      <label className="view-select">
+        Niveles a mostrar:
+        <select
+          value={depthLimit == null ? DEPTH_ALL : String(depthLimit)}
+          onChange={(e) =>
+            onDepthLimitChange(e.target.value === DEPTH_ALL ? null : Number(e.target.value))
+          }
+        >
+          <option value={DEPTH_ALL}>Todos los niveles</option>
+          <option value="1">Primera línea (1 nivel)</option>
+          <option value="2">Primeras 2 líneas</option>
+          <option value="3">Primeras 3 líneas</option>
+        </select>
+      </label>
 
       <label className="view-select">
         Tamaño de página:

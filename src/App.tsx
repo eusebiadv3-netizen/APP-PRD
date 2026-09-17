@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AppStep, OrgNode, ParsedRow, PositionStatus, PositionType, SavedChart } from "./types";
-import { buildInitialNodes, getSubtreeIds, getAncestors, createNode, deleteNode } from "./lib/hierarchy";
+import {
+  buildInitialNodes,
+  getSubtreeIds,
+  getAncestors,
+  limitDepth,
+  createNode,
+  deleteNode,
+} from "./lib/hierarchy";
 import { loadPersistedState, savePersistedState, clearPersistedState } from "./lib/persistence";
 import { saveChart, makeChartId } from "./lib/db";
 import FileUpload from "./components/FileUpload";
@@ -34,6 +41,7 @@ export default function App() {
     () => loadPersistedState()?.viewRootId ?? null
   );
   const [chainMode, setChainMode] = useState<"direct" | "full">("direct");
+  const [depthLimit, setDepthLimit] = useState<number | null>(null);
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(
     () => loadPersistedState()?.logoDataUrl ?? null
   );
@@ -118,15 +126,23 @@ export default function App() {
   // managerId (pointing to someone not in this set) rather than having it
   // cleared, so OrgChart draws a stub line above that box showing it still
   // reports to someone, without revealing who.
+  //
+  // "Primeras N líneas" caps how many levels render below the area's own
+  // head (or the company's true top for "completo") — measured BEFORE any
+  // ancestor context is added above it, so showing "el jefe directo" never
+  // eats into the area's own depth budget.
   const chartNodes = useMemo(() => {
-    if (!viewRootId) return nodes;
+    if (!viewRootId) {
+      return depthLimit != null ? limitDepth(nodes, depthLimit) : nodes;
+    }
     const subtreeIds = getSubtreeIds(nodes, viewRootId);
-    const subtreeNodes = nodes.filter((n) => subtreeIds.has(n.id));
+    let subtreeNodes = nodes.filter((n) => subtreeIds.has(n.id));
+    if (depthLimit != null) subtreeNodes = limitDepth(subtreeNodes, depthLimit);
     const ancestors = getAncestors(nodes, viewRootId);
     if (ancestors.length === 0) return subtreeNodes;
     if (chainMode === "full") return [...ancestors, ...subtreeNodes];
     return [ancestors[0], ...subtreeNodes];
-  }, [nodes, viewRootId, chainMode]);
+  }, [nodes, viewRootId, chainMode, depthLimit]);
 
   return (
     <div className="app">
@@ -201,6 +217,8 @@ export default function App() {
                 onViewRootChange={setViewRootId}
                 chainMode={chainMode}
                 onChainModeChange={setChainMode}
+                depthLimit={depthLimit}
+                onDepthLimitChange={setDepthLimit}
               />
               <div className="chart-scroll">
                 <OrgChart
