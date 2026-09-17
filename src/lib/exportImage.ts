@@ -1,0 +1,100 @@
+interface DownloadsNamespace {
+  save(request: { filename: string; data: Blob }): Promise<{ status: string }>;
+}
+
+/**
+ * Some hosting environments (like a sandboxed preview) block plain
+ * `<a download>` links. When available, the page's `downloads` runtime
+ * capability shows the viewer a save confirmation instead.
+ */
+async function getDownloadsCapability(): Promise<DownloadsNamespace | null> {
+  const claudeApi = (window as unknown as { claude?: { use?: (name: string) => Promise<unknown> } })
+    .claude;
+  if (!claudeApi?.use) return null;
+  try {
+    return (await claudeApi.use("downloads")) as DownloadsNamespace | null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Decodes a base64 data: URL into a Blob without using fetch/XHR — some
+ * sandboxed hosts block those network APIs entirely, even for data: URIs.
+ */
+export function dataUrlToBlob(dataUrl: string): Blob {
+  const commaIndex = dataUrl.indexOf(",");
+  const header = dataUrl.slice(0, commaIndex);
+  const base64 = dataUrl.slice(commaIndex + 1);
+  const mimeMatch = header.match(/data:(.*?);base64/);
+  const mime = mimeMatch ? mimeMatch[1] : "image/png";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
+export class DownloadCancelledError extends Error {}
+
+/**
+ * Offers a Blob to the viewer as a downloadable file. This is the one path
+ * every export in the app should go through — never a library's own
+ * "save file" helper (e.g. SheetJS's writeFile) or a bare `<a download>`,
+ * both of which silently no-op in a sandboxed preview.
+ */
+export async function saveBlob(blob: Blob, filename: string): Promise<void> {
+  const downloads = await getDownloadsCapability();
+  if (downloads) {
+    try {
+      await downloads.save({ filename, data: blob });
+    } catch (e) {
+      const code = (e as { code?: string } | undefined)?.code;
+      if (code === "declined") throw new DownloadCancelledError();
+      throw new Error(
+        `No se pudo guardar el archivo (código: ${code ?? "desconocido"}). Inténtalo de nuevo.`
+      );
+    }
+    return;
+  }
+
+  const url = URL.createObjectURL(blob);
+  try {
+    const link = document.createElement("a");
+    link.download = filename;
+    link.href = url;
+    link.click();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** Offers a data: URL (e.g. from html-to-image) to the viewer as `filename`. */
+export async function saveGeneratedFile(dataUrl: string, filename: string): Promise<void> {
+  const finalName = filename.endsWith(".png") ? filename : `${filename}.png`;
+  await saveBlob(dataUrlToBlob(dataUrl), finalName);
+}
+
+export function slugify(text: string): string {
+  return (
+    text
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "") || "organigrama"
+  );
+}
+
+const DOWNLOAD_ROOT_FOLDER = "ORGANIGRAMAS_DOPE_2026";
+const DOWNLOAD_SUB_FOLDER = "ORGANIGRAMAS_RAINCA";
+
+/**
+ * Every chart download is organized under a fixed Downloads folder, with a
+ * subfolder per company, so saved org charts don't scatter across the
+ * Downloads root. Whether the host actually creates the folders (vs. just
+ * keeping a literal slash in the filename) depends on the browser/host.
+ */
+export function withCompanyFolder(companyName: string, filename: string): string {
+  const companySlug = slugify(companyName || "empresa");
+  return `${DOWNLOAD_ROOT_FOLDER}/${DOWNLOAD_SUB_FOLDER}/${companySlug}/${filename}`;
+}

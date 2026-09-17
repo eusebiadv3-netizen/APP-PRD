@@ -1,0 +1,317 @@
+import { useEffect, useMemo, useState } from "react";
+import type {
+  AppStep,
+  OrgNode,
+  ParsedRow,
+  PositionStatus,
+  PositionType,
+  SavedChart,
+  SignatureRole,
+} from "./types";
+import {
+  buildInitialNodes,
+  getSubtreeIds,
+  getAncestors,
+  limitDepth,
+  createNode,
+  deleteNode,
+} from "./lib/hierarchy";
+import { loadPersistedState, savePersistedState, clearPersistedState } from "./lib/persistence";
+import { saveChart, makeChartId } from "./lib/db";
+import { todayIso } from "./lib/formatDate";
+import FileUpload from "./components/FileUpload";
+import HierarchyConfirmation from "./components/HierarchyConfirmation";
+import OrgChart from "./components/OrgChart";
+import EditModal from "./components/EditModal";
+import AddPositionModal from "./components/AddPositionModal";
+import DownloadControls from "./components/DownloadControls";
+import LogoUpload from "./components/LogoUpload";
+import PositionsTable from "./components/PositionsTable";
+import SavedChartsBrowser from "./components/SavedChartsBrowser";
+
+type ViewMode = "chart" | "table";
+
+export default function App() {
+  const [step, setStep] = useState<AppStep>(() => loadPersistedState()?.step ?? "upload");
+  const [initialNodes, setInitialNodes] = useState<OrgNode[]>(
+    () => loadPersistedState()?.initialNodes ?? []
+  );
+  const [nodes, setNodes] = useState<OrgNode[]>(() => loadPersistedState()?.nodes ?? []);
+  const [chartId, setChartId] = useState<string | null>(() => loadPersistedState()?.chartId ?? null);
+  const [companyName, setCompanyName] = useState<string>(
+    () => loadPersistedState()?.companyName ?? ""
+  );
+  const [editingNode, setEditingNode] = useState<OrgNode | null>(null);
+  const [addingPosition, setAddingPosition] = useState(false);
+  const [browsingSaved, setBrowsingSaved] = useState(false);
+  const [editingCompanyName, setEditingCompanyName] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("chart");
+  const [viewRootId, setViewRootId] = useState<string | null>(
+    () => loadPersistedState()?.viewRootId ?? null
+  );
+  const [chainMode, setChainMode] = useState<"direct" | "full">("direct");
+  const [depthLimit, setDepthLimit] = useState<number | null>(null);
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(
+    () => loadPersistedState()?.logoDataUrl ?? null
+  );
+  const [updateDate, setUpdateDate] = useState<string>(
+    () => loadPersistedState()?.updateDate || todayIso()
+  );
+  const [signatureRoles, setSignatureRoles] = useState<SignatureRole[]>(
+    () => loadPersistedState()?.signatureRoles ?? []
+  );
+
+  // Autosave so a page reload (a published fix, an accidental refresh,
+  // reopening the tab later) doesn't force starting over from scratch.
+  useEffect(() => {
+    if (step === "upload") {
+      clearPersistedState();
+      return;
+    }
+    savePersistedState({
+      step,
+      initialNodes,
+      nodes,
+      logoDataUrl,
+      viewRootId,
+      chartId,
+      companyName,
+      updateDate,
+      signatureRoles,
+    });
+  }, [
+    step,
+    initialNodes,
+    nodes,
+    logoDataUrl,
+    viewRootId,
+    chartId,
+    companyName,
+    updateDate,
+    signatureRoles,
+  ]);
+
+  // Every confirmed org chart lives permanently in the app's own storage
+  // (the "archivero interno"), searchable later by company name.
+  useEffect(() => {
+    if (step !== "chart" || !chartId || !companyName) return;
+    saveChart({
+      id: chartId,
+      companyName,
+      nodes,
+      logoDataUrl,
+      updateDate,
+      signatureRoles,
+      updatedAt: Date.now(),
+    });
+  }, [step, chartId, companyName, nodes, logoDataUrl, updateDate, signatureRoles]);
+
+  function handleParsed(rows: ParsedRow[]) {
+    setInitialNodes(buildInitialNodes(rows));
+    setStep("confirm");
+  }
+
+  function handleConfirmed(confirmedNodes: OrgNode[], name: string) {
+    setNodes(confirmedNodes);
+    setCompanyName(name);
+    setChartId((prev) => prev ?? makeChartId());
+    setViewRootId(null);
+    setStep("chart");
+  }
+
+  function handleOpenSavedChart(chart: SavedChart) {
+    setChartId(chart.id);
+    setCompanyName(chart.companyName);
+    setNodes(chart.nodes);
+    setLogoDataUrl(chart.logoDataUrl);
+    setUpdateDate(chart.updateDate || todayIso());
+    setSignatureRoles(chart.signatureRoles ?? []);
+    setViewRootId(null);
+    setBrowsingSaved(false);
+    setStep("chart");
+  }
+
+  function handleSaveEdit(updated: OrgNode) {
+    setNodes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+    setEditingNode(null);
+  }
+
+  function handleDeleteNode(nodeId: string, strategy: "reassign" | "root") {
+    setNodes((prev) => deleteNode(prev, nodeId, strategy));
+    setEditingNode(null);
+    if (viewRootId === nodeId) setViewRootId(null);
+  }
+
+  function handleAddPosition(
+    title: string,
+    name: string,
+    status: PositionStatus,
+    positionType: PositionType,
+    interimName: string,
+    managerId: string | null
+  ) {
+    setNodes((prev) => [
+      ...prev,
+      createNode(title, name, status, positionType, interimName, managerId),
+    ]);
+    setAddingPosition(false);
+  }
+
+  function handleStartOver() {
+    setStep("upload");
+    setInitialNodes([]);
+    setNodes([]);
+    setChartId(null);
+    setCompanyName("");
+    setViewRootId(null);
+    setLogoDataUrl(null);
+    setUpdateDate(todayIso());
+    setSignatureRoles([]);
+    clearPersistedState();
+  }
+
+  // An "area" view always shows the head's full subtree (everyone who
+  // reports to them). Above that, it shows either just the direct manager
+  // or the full chain up to the company's top — never the managers' other
+  // branches either way. In "direct" mode the manager keeps its real
+  // managerId (pointing to someone not in this set) rather than having it
+  // cleared, so OrgChart draws a stub line above that box showing it still
+  // reports to someone, without revealing who.
+  //
+  // "Primeras N líneas" caps how many levels render below the area's own
+  // head (or the company's true top for "completo") — measured BEFORE any
+  // ancestor context is added above it, so showing "el jefe directo" never
+  // eats into the area's own depth budget.
+  const chartNodes = useMemo(() => {
+    if (!viewRootId) {
+      return depthLimit != null ? limitDepth(nodes, depthLimit) : nodes;
+    }
+    const subtreeIds = getSubtreeIds(nodes, viewRootId);
+    let subtreeNodes = nodes.filter((n) => subtreeIds.has(n.id));
+    if (depthLimit != null) subtreeNodes = limitDepth(subtreeNodes, depthLimit);
+    const ancestors = getAncestors(nodes, viewRootId);
+    if (ancestors.length === 0) return subtreeNodes;
+    if (chainMode === "full") return [...ancestors, ...subtreeNodes];
+    return [ancestors[0], ...subtreeNodes];
+  }, [nodes, viewRootId, chainMode, depthLimit]);
+
+  return (
+    <div className="app">
+      {step === "upload" && (
+        <FileUpload onParsed={handleParsed} onBrowseSaved={() => setBrowsingSaved(true)} />
+      )}
+
+      {step === "confirm" && (
+        <HierarchyConfirmation
+          initialNodes={initialNodes}
+          initialCompanyName={companyName}
+          onConfirmed={handleConfirmed}
+          onBack={handleStartOver}
+        />
+      )}
+
+      {step === "chart" && (
+        <div className="chart-screen">
+          <header className="chart-header">
+            <div className="chart-title-block">
+              <h1>Organigrama</h1>
+              {editingCompanyName ? (
+                <input
+                  className="company-name-inline-input"
+                  value={companyName}
+                  autoFocus
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  onBlur={() => setEditingCompanyName(false)}
+                  onKeyDown={(e) => e.key === "Enter" && setEditingCompanyName(false)}
+                />
+              ) : (
+                <button className="company-name-label" onClick={() => setEditingCompanyName(true)}>
+                  {companyName || "Sin nombre de empresa"} ✎
+                </button>
+              )}
+            </div>
+            <div className="header-actions">
+              <div className="view-mode-toggle">
+                <button
+                  className={viewMode === "chart" ? "toggle-btn toggle-btn-active" : "toggle-btn"}
+                  onClick={() => setViewMode("chart")}
+                >
+                  Organigrama
+                </button>
+                <button
+                  className={viewMode === "table" ? "toggle-btn toggle-btn-active" : "toggle-btn"}
+                  onClick={() => setViewMode("table")}
+                >
+                  Tabla de cargos
+                </button>
+              </div>
+              <button className="btn-secondary" onClick={() => setAddingPosition(true)}>
+                Agregar posición
+              </button>
+              <button className="btn-secondary" onClick={() => setBrowsingSaved(true)}>
+                Organigramas guardados
+              </button>
+              <button className="btn-secondary" onClick={handleStartOver}>
+                Subir otro archivo
+              </button>
+            </div>
+          </header>
+
+          {viewMode === "chart" ? (
+            <>
+              <LogoUpload logoDataUrl={logoDataUrl} onChange={setLogoDataUrl} />
+              <DownloadControls
+                allNodes={nodes}
+                exportNodes={chartNodes}
+                logoDataUrl={logoDataUrl}
+                companyName={companyName}
+                viewRootId={viewRootId}
+                onViewRootChange={setViewRootId}
+                chainMode={chainMode}
+                onChainModeChange={setChainMode}
+                depthLimit={depthLimit}
+                onDepthLimitChange={setDepthLimit}
+                updateDate={updateDate}
+                onUpdateDateChange={setUpdateDate}
+                signatureRoles={signatureRoles}
+                onSignatureRolesChange={setSignatureRoles}
+              />
+              <div className="chart-scroll">
+                <OrgChart
+                  nodes={chartNodes}
+                  onNodeClick={(clicked) => {
+                    setEditingNode(nodes.find((n) => n.id === clicked.id) ?? clicked);
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <PositionsTable nodes={nodes} companyName={companyName} />
+          )}
+        </div>
+      )}
+
+      {editingNode && (
+        <EditModal
+          node={editingNode}
+          allNodes={nodes}
+          onSave={handleSaveEdit}
+          onDelete={handleDeleteNode}
+          onClose={() => setEditingNode(null)}
+        />
+      )}
+
+      {addingPosition && (
+        <AddPositionModal
+          allNodes={nodes}
+          onAdd={handleAddPosition}
+          onClose={() => setAddingPosition(false)}
+        />
+      )}
+
+      {browsingSaved && (
+        <SavedChartsBrowser onOpen={handleOpenSavedChart} onClose={() => setBrowsingSaved(false)} />
+      )}
+    </div>
+  );
+}
