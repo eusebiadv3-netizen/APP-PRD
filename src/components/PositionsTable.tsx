@@ -5,6 +5,7 @@ import { DownloadCancelledError } from "../lib/exportImage";
 
 interface Props {
   nodes: OrgNode[];
+  companyName: string;
 }
 
 const STATUS_LABEL: Record<OrgNode["status"], string> = {
@@ -20,7 +21,7 @@ function managerLabel(node: OrgNode, nodes: OrgNode[]): string {
   return manager.name ? `${manager.name} (${manager.title})` : manager.title;
 }
 
-export default function PositionsTable({ nodes }: Props) {
+export default function PositionsTable({ nodes, companyName }: Props) {
   const tableRef = useRef<HTMLTableElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +31,9 @@ export default function PositionsTable({ nodes }: Props) {
     setError(null);
     try {
       if (kind === "xlsx") {
-        await exportPositionsAsXlsx(nodes, "tabla-de-cargos");
+        await exportPositionsAsXlsx(nodes, "tabla-de-cargos", companyName);
       } else if (tableRef.current) {
-        await exportTableAsPng(tableRef.current, "tabla-de-cargos");
+        await exportTableAsPng(tableRef.current, "tabla-de-cargos", companyName);
       }
     } catch (e) {
       if (!(e instanceof DownloadCancelledError)) {

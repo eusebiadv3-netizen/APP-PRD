@@ -1,4 +1,4 @@
-import type { AppStep, OrgNode } from "../types";
+import type { AppStep, OrgNode, SignatureRole } from "../types";
 
 const STORAGE_KEY = "organigrama-app-state-v1";
 
@@ -10,6 +10,8 @@ export interface PersistedState {
   viewRootId: string | null;
   chartId: string | null;
   companyName: string;
+  updateDate: string;
+  signatureRoles: SignatureRole[];
 }
 
 /**

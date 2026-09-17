@@ -2,6 +2,8 @@ export const LETTER_DPI = 96;
 export const PAGE_MARGIN_IN = 0.5;
 export const LOGO_ROW_IN = 1.3;
 export const TITLE_ROW_IN = 0.5;
+export const UPDATE_DATE_ROW_IN = 0.3;
+export const SIGNATURE_ROW_IN = 0.9;
 const MAX_CONTENT_SCALE = 2;
 
 export type PageSize = "carta" | "oficio";
@@ -30,34 +32,46 @@ export interface PrintPageLayout {
   marginPx: number;
   titleRowPx: number;
   logoRowPx: number;
+  updateDateRowPx: number;
+  signatureRowPx: number;
   scale: number;
   offsetX: number;
   offsetY: number;
+}
+
+export interface PrintPageOptions {
+  hasLogo: boolean;
+  hasUpdateDate: boolean;
+  hasSignatures: boolean;
 }
 
 /**
  * Picks whichever orientation of the chosen page size (Carta/Oficio,
  * portrait/landscape) fits the chart's natural size with the least
  * shrinking, then returns everything needed to center it inside a 0.5in
- * margin (below a title row, and a reserved logo row when there's a logo).
+ * margin (below a title row, an optional update-date line, and a reserved
+ * logo row when there's a logo; above an optional signature row).
  */
 export function computePrintPageLayout(
   contentWidth: number,
   contentHeight: number,
-  hasLogo: boolean,
-  pageSize: PageSize = "carta"
+  pageSize: PageSize = "carta",
+  options: PrintPageOptions = { hasLogo: false, hasUpdateDate: false, hasSignatures: false }
 ): PrintPageLayout {
   const marginPx = Math.round(PAGE_MARGIN_IN * LETTER_DPI);
   const titleRowPx = Math.round(TITLE_ROW_IN * LETTER_DPI);
-  const logoRowPx = hasLogo ? Math.round(LOGO_ROW_IN * LETTER_DPI) : 0;
-  const topReservedPx = titleRowPx + logoRowPx;
+  const logoRowPx = options.hasLogo ? Math.round(LOGO_ROW_IN * LETTER_DPI) : 0;
+  const updateDateRowPx = options.hasUpdateDate ? Math.round(UPDATE_DATE_ROW_IN * LETTER_DPI) : 0;
+  const signatureRowPx = options.hasSignatures ? Math.round(SIGNATURE_ROW_IN * LETTER_DPI) : 0;
+  const topReservedPx = titleRowPx + updateDateRowPx + logoRowPx;
+  const bottomReservedPx = signatureRowPx;
 
   let best: PrintPageLayout | null = null;
   for (const o of orientationsFor(pageSize)) {
     const pageWidth = Math.round(o.w * LETTER_DPI);
     const pageHeight = Math.round(o.h * LETTER_DPI);
     const availW = pageWidth - 2 * marginPx;
-    const availH = pageHeight - 2 * marginPx - topReservedPx;
+    const availH = pageHeight - 2 * marginPx - topReservedPx - bottomReservedPx;
     const scale = Math.min(availW / contentWidth, availH / contentHeight, MAX_CONTENT_SCALE);
     const offsetX = marginPx + (availW - contentWidth * scale) / 2;
     const offsetY = marginPx + topReservedPx + (availH - contentHeight * scale) / 2;
@@ -67,6 +81,8 @@ export function computePrintPageLayout(
       marginPx,
       titleRowPx,
       logoRowPx,
+      updateDateRowPx,
+      signatureRowPx,
       scale,
       offsetX,
       offsetY,

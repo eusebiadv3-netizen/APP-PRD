@@ -405,6 +405,24 @@ h1 {
   font-size: 0.85rem;
 }
 
+.signature-select {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+  flex-wrap: wrap;
+}
+
+.signature-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
 .chart-scroll {
   overflow: auto;
   border: 1px solid var(--color-border);

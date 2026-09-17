@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import type { AppStep, OrgNode, ParsedRow, PositionStatus, PositionType, SavedChart } from "./types";
+import type {
+  AppStep,
+  OrgNode,
+  ParsedRow,
+  PositionStatus,
+  PositionType,
+  SavedChart,
+  SignatureRole,
+} from "./types";
 import {
   buildInitialNodes,
   getSubtreeIds,
@@ -10,6 +18,7 @@ import {
 } from "./lib/hierarchy";
 import { loadPersistedState, savePersistedState, clearPersistedState } from "./lib/persistence";
 import { saveChart, makeChartId } from "./lib/db";
+import { todayIso } from "./lib/formatDate";
 import FileUpload from "./components/FileUpload";
 import HierarchyConfirmation from "./components/HierarchyConfirmation";
 import OrgChart from "./components/OrgChart";
@@ -45,6 +54,12 @@ export default function App() {
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(
     () => loadPersistedState()?.logoDataUrl ?? null
   );
+  const [updateDate, setUpdateDate] = useState<string>(
+    () => loadPersistedState()?.updateDate || todayIso()
+  );
+  const [signatureRoles, setSignatureRoles] = useState<SignatureRole[]>(
+    () => loadPersistedState()?.signatureRoles ?? []
+  );
 
   // Autosave so a page reload (a published fix, an accidental refresh,
   // reopening the tab later) doesn't force starting over from scratch.
@@ -53,15 +68,43 @@ export default function App() {
       clearPersistedState();
       return;
     }
-    savePersistedState({ step, initialNodes, nodes, logoDataUrl, viewRootId, chartId, companyName });
-  }, [step, initialNodes, nodes, logoDataUrl, viewRootId, chartId, companyName]);
+    savePersistedState({
+      step,
+      initialNodes,
+      nodes,
+      logoDataUrl,
+      viewRootId,
+      chartId,
+      companyName,
+      updateDate,
+      signatureRoles,
+    });
+  }, [
+    step,
+    initialNodes,
+    nodes,
+    logoDataUrl,
+    viewRootId,
+    chartId,
+    companyName,
+    updateDate,
+    signatureRoles,
+  ]);
 
   // Every confirmed org chart lives permanently in the app's own storage
   // (the "archivero interno"), searchable later by company name.
   useEffect(() => {
     if (step !== "chart" || !chartId || !companyName) return;
-    saveChart({ id: chartId, companyName, nodes, logoDataUrl, updatedAt: Date.now() });
-  }, [step, chartId, companyName, nodes, logoDataUrl]);
+    saveChart({
+      id: chartId,
+      companyName,
+      nodes,
+      logoDataUrl,
+      updateDate,
+      signatureRoles,
+      updatedAt: Date.now(),
+    });
+  }, [step, chartId, companyName, nodes, logoDataUrl, updateDate, signatureRoles]);
 
   function handleParsed(rows: ParsedRow[]) {
     setInitialNodes(buildInitialNodes(rows));
@@ -81,6 +124,8 @@ export default function App() {
     setCompanyName(chart.companyName);
     setNodes(chart.nodes);
     setLogoDataUrl(chart.logoDataUrl);
+    setUpdateDate(chart.updateDate || todayIso());
+    setSignatureRoles(chart.signatureRoles ?? []);
     setViewRootId(null);
     setBrowsingSaved(false);
     setStep("chart");
@@ -120,6 +165,8 @@ export default function App() {
     setCompanyName("");
     setViewRootId(null);
     setLogoDataUrl(null);
+    setUpdateDate(todayIso());
+    setSignatureRoles([]);
     clearPersistedState();
   }
 
@@ -217,12 +264,17 @@ export default function App() {
                 allNodes={nodes}
                 exportNodes={chartNodes}
                 logoDataUrl={logoDataUrl}
+                companyName={companyName}
                 viewRootId={viewRootId}
                 onViewRootChange={setViewRootId}
                 chainMode={chainMode}
                 onChainModeChange={setChainMode}
                 depthLimit={depthLimit}
                 onDepthLimitChange={setDepthLimit}
+                updateDate={updateDate}
+                onUpdateDateChange={setUpdateDate}
+                signatureRoles={signatureRoles}
+                onSignatureRolesChange={setSignatureRoles}
               />
               <div className="chart-scroll">
                 <OrgChart
@@ -234,7 +286,7 @@ export default function App() {
               </div>
             </>
           ) : (
-            <PositionsTable nodes={nodes} />
+            <PositionsTable nodes={nodes} companyName={companyName} />
           )}
         </div>
       )}

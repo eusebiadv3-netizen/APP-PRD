@@ -1,10 +1,10 @@
 import { createRoot } from "react-dom/client";
 import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
-import type { OrgNode } from "../types";
+import type { OrgNode, SignatureRole } from "../types";
 import { computeLayout } from "./layout";
 import { computePrintPageLayout, waitForImagesToLoad, type PageSize, type PrintPageLayout } from "./printExport";
-import { saveGeneratedFile, saveBlob } from "./exportImage";
+import { saveGeneratedFile, saveBlob, withCompanyFolder } from "./exportImage";
 import PrintPage from "../components/PrintPage";
 
 interface RenderedPage {
@@ -14,18 +14,25 @@ interface RenderedPage {
 
 /**
  * Renders the org chart onto an offscreen page (Letter/Oficio, with
- * margins, blue frame, and the company logo if set) and captures it as a
- * PNG data URL. Shared by the PNG/PDF export paths — printing uses the
- * same PrintPage component but keeps the DOM node instead of a snapshot.
+ * margins, blue frame, the company logo if set, the update date and any
+ * authorization signature lines) and captures it as a PNG data URL. Shared
+ * by the PNG/PDF export paths — printing uses the same PrintPage component
+ * but keeps the DOM node instead of a snapshot.
  */
 async function renderPrintPageToDataUrl(
   nodes: OrgNode[],
   logoDataUrl: string | null,
   pageSize: PageSize,
-  title: string
+  title: string,
+  updateDate: string,
+  signatureRoles: SignatureRole[]
 ): Promise<RenderedPage> {
   const { width: contentWidth, height: contentHeight } = computeLayout(nodes);
-  const layout = computePrintPageLayout(contentWidth, contentHeight, !!logoDataUrl, pageSize);
+  const layout = computePrintPageLayout(contentWidth, contentHeight, pageSize, {
+    hasLogo: !!logoDataUrl,
+    hasUpdateDate: !!updateDate,
+    hasSignatures: signatureRoles.length > 0,
+  });
 
   const container = document.createElement("div");
   container.style.position = "fixed";
@@ -43,6 +50,8 @@ async function renderPrintPageToDataUrl(
         contentHeight={contentHeight}
         logoDataUrl={logoDataUrl}
         title={title}
+        updateDate={updateDate}
+        signatureRoles={signatureRoles}
       />
     );
 
@@ -70,10 +79,20 @@ export async function exportOrgChartAsPng(
   filename: string,
   logoDataUrl: string | null,
   pageSize: PageSize,
-  title: string
+  title: string,
+  updateDate: string,
+  signatureRoles: SignatureRole[],
+  companyName: string
 ): Promise<void> {
-  const { dataUrl } = await renderPrintPageToDataUrl(nodes, logoDataUrl, pageSize, title);
-  await saveGeneratedFile(dataUrl, filename);
+  const { dataUrl } = await renderPrintPageToDataUrl(
+    nodes,
+    logoDataUrl,
+    pageSize,
+    title,
+    updateDate,
+    signatureRoles
+  );
+  await saveGeneratedFile(dataUrl, withCompanyFolder(companyName, filename));
 }
 
 export async function exportOrgChartAsPdf(
@@ -81,9 +100,19 @@ export async function exportOrgChartAsPdf(
   filename: string,
   logoDataUrl: string | null,
   pageSize: PageSize,
-  title: string
+  title: string,
+  updateDate: string,
+  signatureRoles: SignatureRole[],
+  companyName: string
 ): Promise<void> {
-  const { dataUrl, layout } = await renderPrintPageToDataUrl(nodes, logoDataUrl, pageSize, title);
+  const { dataUrl, layout } = await renderPrintPageToDataUrl(
+    nodes,
+    logoDataUrl,
+    pageSize,
+    title,
+    updateDate,
+    signatureRoles
+  );
   const widthIn = layout.pageWidth / 96;
   const heightIn = layout.pageHeight / 96;
   const doc = new jsPDF({
@@ -94,7 +123,7 @@ export async function exportOrgChartAsPdf(
   doc.addImage(dataUrl, "PNG", 0, 0, widthIn, heightIn, undefined, "SLOW");
   const blob = doc.output("blob");
   const finalName = filename.endsWith(".pdf") ? filename : `${filename}.pdf`;
-  await saveBlob(blob, finalName);
+  await saveBlob(blob, withCompanyFolder(companyName, finalName));
 }
 
 /**
@@ -107,10 +136,16 @@ export async function printOrgChart(
   nodes: OrgNode[],
   logoDataUrl: string | null,
   pageSize: PageSize,
-  title: string
+  title: string,
+  updateDate: string,
+  signatureRoles: SignatureRole[]
 ): Promise<void> {
   const { width: contentWidth, height: contentHeight } = computeLayout(nodes);
-  const layout = computePrintPageLayout(contentWidth, contentHeight, !!logoDataUrl, pageSize);
+  const layout = computePrintPageLayout(contentWidth, contentHeight, pageSize, {
+    hasLogo: !!logoDataUrl,
+    hasUpdateDate: !!updateDate,
+    hasSignatures: signatureRoles.length > 0,
+  });
 
   const container = document.createElement("div");
   container.className = "print-capture-root";
@@ -129,6 +164,8 @@ export async function printOrgChart(
       contentHeight={contentHeight}
       logoDataUrl={logoDataUrl}
       title={title}
+      updateDate={updateDate}
+      signatureRoles={signatureRoles}
     />
   );
 

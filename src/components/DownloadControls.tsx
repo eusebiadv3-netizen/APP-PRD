@@ -1,41 +1,62 @@
 import { useState } from "react";
-import type { OrgNode } from "../types";
+import type { OrgNode, SignatureRole } from "../types";
+import { SIGNATURE_ROLE_LABEL } from "../types";
 import { slugify, DownloadCancelledError } from "../lib/exportImage";
 import { exportOrgChartAsPng, exportOrgChartAsPdf, printOrgChart } from "../lib/exportChart";
+import { exportOrgChartRelationsAsXlsx } from "../lib/exportTable";
 import { PAGE_SIZE_LABEL, type PageSize } from "../lib/printExport";
 
 const FULL_VALUE = "__full__";
+const ALL_SIGNATURE_ROLES: SignatureRole[] = ["presidente", "vicepresidente", "gerente-general"];
 
 interface Props {
   allNodes: OrgNode[];
   exportNodes: OrgNode[];
   logoDataUrl: string | null;
+  companyName: string;
   viewRootId: string | null;
   onViewRootChange: (id: string | null) => void;
   chainMode: "direct" | "full";
   onChainModeChange: (mode: "direct" | "full") => void;
   depthLimit: number | null;
   onDepthLimitChange: (depth: number | null) => void;
+  updateDate: string;
+  onUpdateDateChange: (date: string) => void;
+  signatureRoles: SignatureRole[];
+  onSignatureRolesChange: (roles: SignatureRole[]) => void;
 }
 
 const DEPTH_ALL = "__all__";
 
-type BusyAction = "png" | "pdf" | "print" | null;
+type BusyAction = "png" | "pdf" | "print" | "xlsx" | null;
 
 export default function DownloadControls({
   allNodes,
   exportNodes,
   logoDataUrl,
+  companyName,
   viewRootId,
   onViewRootChange,
   chainMode,
   onChainModeChange,
   depthLimit,
   onDepthLimitChange,
+  updateDate,
+  onUpdateDateChange,
+  signatureRoles,
+  onSignatureRolesChange,
 }: Props) {
   const [pageSize, setPageSize] = useState<PageSize>("carta");
   const [busy, setBusy] = useState<BusyAction>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function toggleSignatureRole(role: SignatureRole) {
+    if (signatureRoles.includes(role)) {
+      onSignatureRolesChange(signatureRoles.filter((r) => r !== role));
+    } else {
+      onSignatureRolesChange([...signatureRoles, role]);
+    }
+  }
 
   function currentAreaNode(): OrgNode | null {
     return viewRootId ? allNodes.find((n) => n.id === viewRootId) ?? null : null;
@@ -121,12 +142,44 @@ export default function DownloadControls({
         </select>
       </label>
 
+      <label className="view-select">
+        Fecha de actualización:
+        <input
+          type="date"
+          value={updateDate}
+          onChange={(e) => onUpdateDateChange(e.target.value)}
+        />
+      </label>
+
+      <div className="signature-select">
+        <span>Firma de autorización (opcional):</span>
+        {ALL_SIGNATURE_ROLES.map((role) => (
+          <label key={role} className="signature-checkbox">
+            <input
+              type="checkbox"
+              checked={signatureRoles.includes(role)}
+              onChange={() => toggleSignatureRole(role)}
+            />
+            {SIGNATURE_ROLE_LABEL[role]}
+          </label>
+        ))}
+      </div>
+
       <button
         className="btn-primary"
         disabled={busy !== null}
         onClick={() =>
           run("png", () =>
-            exportOrgChartAsPng(exportNodes, currentFilename(), logoDataUrl, pageSize, currentTitle())
+            exportOrgChartAsPng(
+              exportNodes,
+              currentFilename(),
+              logoDataUrl,
+              pageSize,
+              currentTitle(),
+              updateDate,
+              signatureRoles,
+              companyName
+            )
           )
         }
       >
@@ -137,7 +190,16 @@ export default function DownloadControls({
         disabled={busy !== null}
         onClick={() =>
           run("pdf", () =>
-            exportOrgChartAsPdf(exportNodes, currentFilename(), logoDataUrl, pageSize, currentTitle())
+            exportOrgChartAsPdf(
+              exportNodes,
+              currentFilename(),
+              logoDataUrl,
+              pageSize,
+              currentTitle(),
+              updateDate,
+              signatureRoles,
+              companyName
+            )
           )
         }
       >
@@ -146,9 +208,24 @@ export default function DownloadControls({
       <button
         className="btn-secondary"
         disabled={busy !== null}
-        onClick={() => run("print", () => printOrgChart(exportNodes, logoDataUrl, pageSize, currentTitle()))}
+        onClick={() =>
+          run("print", () =>
+            printOrgChart(exportNodes, logoDataUrl, pageSize, currentTitle(), updateDate, signatureRoles)
+          )
+        }
       >
         {busy === "print" ? "Preparando impresión..." : "Imprimir"}
+      </button>
+      <button
+        className="btn-secondary"
+        disabled={busy !== null}
+        onClick={() =>
+          run("xlsx", () =>
+            exportOrgChartRelationsAsXlsx(exportNodes, currentFilename(), companyName)
+          )
+        }
+      >
+        {busy === "xlsx" ? "Generando Excel..." : "Descargar Excel (Cargo/Nombre/Reporta a)"}
       </button>
       {error && <span className="download-error">{error}</span>}
     </div>

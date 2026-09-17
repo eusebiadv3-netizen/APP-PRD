@@ -31,10 +31,23 @@ export interface ParsedRow {
 
 export type AppStep = "upload" | "confirm" | "chart";
 
+/** Roles that can carry an authorization signature line on the printed chart. */
+export type SignatureRole = "presidente" | "vicepresidente" | "gerente-general";
+
+export const SIGNATURE_ROLE_LABEL: Record<SignatureRole, string> = {
+  presidente: "Presidente",
+  vicepresidente: "Vicepresidente",
+  "gerente-general": "Gerente General",
+};
+
 export interface SavedChart {
   id: string;
   companyName: string;
   nodes: OrgNode[];
   logoDataUrl: string | null;
+  /** Date shown on the printed/exported chart (YYYY-MM-DD), set by the user. */
+  updateDate: string;
+  /** Which authorization signature lines to print, if any (none by default). */
+  signatureRoles: SignatureRole[];
   updatedAt: number;
 }

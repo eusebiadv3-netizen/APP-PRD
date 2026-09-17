@@ -84,3 +84,17 @@ export function slugify(text: string): string {
       .replace(/(^-|-$)/g, "") || "organigrama"
   );
 }
+
+const DOWNLOAD_ROOT_FOLDER = "ORGANIGRAMAS_DOPE_2026";
+const DOWNLOAD_SUB_FOLDER = "ORGANIGRAMAS_RAINCA";
+
+/**
+ * Every chart download is organized under a fixed Downloads folder, with a
+ * subfolder per company, so saved org charts don't scatter across the
+ * Downloads root. Whether the host actually creates the folders (vs. just
+ * keeping a literal slash in the filename) depends on the browser/host.
+ */
+export function withCompanyFolder(companyName: string, filename: string): string {
+  const companySlug = slugify(companyName || "empresa");
+  return `${DOWNLOAD_ROOT_FOLDER}/${DOWNLOAD_SUB_FOLDER}/${companySlug}/${filename}`;
+}

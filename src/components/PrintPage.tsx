@@ -1,6 +1,8 @@
 import type { CSSProperties } from "react";
-import type { OrgNode } from "../types";
+import type { OrgNode, SignatureRole } from "../types";
+import { SIGNATURE_ROLE_LABEL } from "../types";
 import type { PrintPageLayout } from "../lib/printExport";
+import { formatDateEs } from "../lib/formatDate";
 import OrgChart from "./OrgChart";
 
 interface Props {
@@ -10,6 +12,8 @@ interface Props {
   contentHeight: number;
   logoDataUrl: string | null;
   title: string;
+  updateDate: string;
+  signatureRoles: SignatureRole[];
 }
 
 // Printed output always uses the light palette, regardless of the viewer's
@@ -35,8 +39,28 @@ const LIGHT_TOKENS = {
 
 const FRAME_INSET = 24; // sits inside the 0.5in margin, never touches content
 
-export default function PrintPage({ nodes, layout, contentWidth, contentHeight, logoDataUrl, title }: Props) {
-  const { pageWidth, pageHeight, marginPx, titleRowPx, logoRowPx, scale, offsetX, offsetY } = layout;
+export default function PrintPage({
+  nodes,
+  layout,
+  contentWidth,
+  contentHeight,
+  logoDataUrl,
+  title,
+  updateDate,
+  signatureRoles,
+}: Props) {
+  const {
+    pageWidth,
+    pageHeight,
+    marginPx,
+    titleRowPx,
+    logoRowPx,
+    updateDateRowPx,
+    signatureRowPx,
+    scale,
+    offsetX,
+    offsetY,
+  } = layout;
 
   return (
     <div
@@ -78,13 +102,31 @@ export default function PrintPage({ nodes, layout, contentWidth, contentHeight, 
       >
         {title}
       </div>
-      {logoDataUrl && (
+      {updateDate && (
         <div
           style={{
             position: "absolute",
             left: marginPx,
             right: marginPx,
             top: marginPx + titleRowPx,
+            height: updateDateRowPx,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 12,
+            color: "#64748b",
+          }}
+        >
+          Fecha de actualización: {formatDateEs(updateDate)}
+        </div>
+      )}
+      {logoDataUrl && (
+        <div
+          style={{
+            position: "absolute",
+            left: marginPx,
+            right: marginPx,
+            top: marginPx + titleRowPx + updateDateRowPx,
             height: logoRowPx - 24,
             display: "flex",
             alignItems: "center",
@@ -93,6 +135,39 @@ export default function PrintPage({ nodes, layout, contentWidth, contentHeight, 
         >
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <img src={logoDataUrl} style={{ maxHeight: "100%", maxWidth: 340, objectFit: "contain" }} />
+        </div>
+      )}
+      {signatureRoles.length > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            left: marginPx + 20,
+            right: marginPx + 20,
+            top: pageHeight - marginPx - signatureRowPx,
+            height: signatureRowPx,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "space-evenly",
+            gap: 24,
+          }}
+        >
+          {signatureRoles.map((role) => (
+            <div
+              key={role}
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <div style={{ width: "100%", borderTop: "1.5px solid #1e293b" }} />
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#1e293b" }}>
+                {SIGNATURE_ROLE_LABEL[role]}
+              </div>
+            </div>
+          ))}
         </div>
       )}
       <div
