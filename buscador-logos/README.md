@@ -21,7 +21,8 @@ Cadena de resolución de logos, según la sección 8 del PRD (base propia →
 API externa → extracción de dominio), con Wikidata/Wikimedia Commons agregado
 como fuente universal para cubrir marcas fuera de la base curada:
 
-1. **Base propia curada** (`data/brands.js`): ~90 marcas de alto tráfico con
+1. **Base propia curada** (`data/brands.js`): ~130 marcas de alto tráfico
+   (tecnología, consumo, automotriz, industrial/maquinaria pesada, etc.) con
    alias (español/inglés) mapeadas a su dominio oficial, para resultados
    instantáneos y de alta confianza. Intenta Clearbit y, si falla, el favicon
    de Google (aceptable aquí porque el dominio ya está verificado).
@@ -44,6 +45,19 @@ como fuente universal para cubrir marcas fuera de la base curada:
 Si ninguna fuente responde con una imagen válida, además se muestran
 sugerencias de marcas similares de la base curada (por coincidencia de
 prefijo y distancia de edición), útiles para errores de tipeo.
+
+### Selección por calidad, no solo por orden
+
+Distintas fuentes entregan distinta resolución real para la misma marca: un
+logo cacheado en Clearbit puede ser un PNG chico (p. ej. 96×96), mientras que
+Wikimedia Commons suele tener el logo oficial en SVG y genera un thumbnail
+nítido al ancho que se le pida — mejor para uso en presentaciones. Por eso,
+si la primera fuente que responde da una imagen menor al 85% de la
+resolución pedida, la app sigue probando las demás fuentes disponibles y se
+queda con la de mayor resolución real entre las que cargaron. Si aun así
+ninguna alcanza la resolución pedida, se muestra un aviso junto al resultado
+indicando el tamaño real entregado (RF-08), en vez de entregar silenciosamente
+un archivo más chico de lo solicitado.
 
 ## Requisitos funcionales cubiertos (MVP)
 

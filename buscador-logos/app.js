@@ -2,8 +2,9 @@
   "use strict";
 
   const DEFAULT_SIZE = 512;
-  const FETCH_TIMEOUT_MS = 6000;
+  const FETCH_TIMEOUT_MS = 5000;
   const DOMAIN_TLDS = ["com", "io", "co", "net", "org"];
+  const GOOD_ENOUGH_RATIO = 0.85; // a match is "good enough" if it reaches 85% of the requested size
 
   const form = document.getElementById("search-form");
   const input = document.getElementById("brand-input");
@@ -17,6 +18,7 @@
   const previewImg = document.getElementById("logo-preview");
   const resultName = document.getElementById("result-name");
   const resultSource = document.getElementById("result-source");
+  const qualityNote = document.getElementById("quality-note");
   const downloadBtn = document.getElementById("download-btn");
   const fallbackNote = document.getElementById("download-fallback-note");
   const sizeButtons = Array.from(document.querySelectorAll(".size-btn"));
@@ -25,8 +27,9 @@
   const manualDomainInput = document.getElementById("manual-domain-input");
 
   let currentSize = DEFAULT_SIZE;
-  let currentMatch = null; // { name, kind, domain?, filename?, wikidataId?, url }
+  let currentMatch = null; // { name, kind, domain?, filename?, wikidataId?, url, width, height }
   let searchToken = 0; // descarta resultados de búsquedas previas si el usuario ya lanzó otra
+  let lastSearch = null; // { type: "query" | "manual", value } — para re-resolver al cambiar de resolución
 
   populateAutocomplete();
   sizeButtons.forEach((btn) => btn.addEventListener("click", () => onSizeChange(btn)));
@@ -127,10 +130,14 @@
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
   }
 
+  // El ancho pedido a Commons es solo una meta de render: si el original es un SVG,
+  // Commons genera un thumbnail nítido a ese ancho (por eso esta fuente da mejor
+  // calidad "para presentaciones" que un logo PNG pequeño ya cacheado en otra fuente).
   function wikimediaFileUrl(filename, size) {
     return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=${size}`;
   }
 
+  // Resuelve con las dimensiones reales de la imagen, para poder comparar calidad entre fuentes
   function loadImage(url, timeoutMs) {
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -147,8 +154,11 @@
         if (settled) return;
         settled = true;
         if (timer) clearTimeout(timer);
-        if (img.naturalWidth > 1 && img.naturalHeight > 1) resolve(url);
-        else reject(new Error("empty image"));
+        if (img.naturalWidth > 1 && img.naturalHeight > 1) {
+          resolve({ url, width: img.naturalWidth, height: img.naturalHeight });
+        } else {
+          reject(new Error("empty image"));
+        }
       };
       img.onerror = () => {
         if (settled) return;
@@ -172,8 +182,13 @@
     }
   }
 
-  // Nivel 2: búsqueda universal via Wikidata/Wikimedia Commons. Cubre practicamente
-  // cualquier marca/empresa notoria publicada en internet, no solo las precargadas.
+  function isGoodEnough(dims, size) {
+    return dims && dims.width >= size * GOOD_ENOUGH_RATIO;
+  }
+
+  // Fuente universal via Wikidata/Wikimedia Commons: cubre prácticamente cualquier
+  // marca/empresa con presencia notable en internet, no solo las precargadas, y suele
+  // dar mejor calidad porque muchos logos ahí son vectoriales (SVG) en origen.
   async function findViaWikidata(query, size) {
     const searchUrl =
       "https://www.wikidata.org/w/api.php?action=wbsearchentities" +
@@ -206,13 +221,15 @@
 
       const url = wikimediaFileUrl(filename, size);
       try {
-        await loadImage(url, FETCH_TIMEOUT_MS);
+        const dims = await loadImage(url, FETCH_TIMEOUT_MS);
         return {
           name: hit.label || query,
           kind: "wikimedia",
           filename,
           wikidataId: hit.id,
           url,
+          width: dims.width,
+          height: dims.height,
         };
       } catch (err) {
         continue;
@@ -228,15 +245,15 @@
     return domains;
   }
 
-  // Nivel 3: dominio inferido del nombre, probando variantes de TLD/formato contra Clearbit.
+  // Dominio inferido del nombre, probando variantes de TLD/formato contra Clearbit.
   // No se usa el favicon de Google aquí porque casi siempre responde con un ícono genérico
   // aunque el dominio no exista, lo que daría falsos positivos para dominios no verificados.
   async function findViaGuessedDomain(query, size) {
     for (const domain of domainCandidates(query)) {
       const url = clearbitUrl(domain, size);
       try {
-        await loadImage(url, FETCH_TIMEOUT_MS);
-        return { name: query.trim(), kind: "clearbit", domain, url };
+        const dims = await loadImage(url, FETCH_TIMEOUT_MS);
+        return { name: query.trim(), kind: "clearbit", domain, url, width: dims.width, height: dims.height };
       } catch (err) {
         continue;
       }
@@ -244,62 +261,68 @@
     return null;
   }
 
-  async function findViaCuratedDomain(curated, size) {
-    const clearbit = clearbitUrl(curated.domain, size);
+  async function findViaClearbitDomain(name, domain, size) {
+    const url = clearbitUrl(domain, size);
     try {
-      await loadImage(clearbit, FETCH_TIMEOUT_MS);
-      return { name: curated.name, kind: "clearbit", domain: curated.domain, url: clearbit };
+      const dims = await loadImage(url, FETCH_TIMEOUT_MS);
+      return { name, kind: "clearbit", domain, url, width: dims.width, height: dims.height };
     } catch (err) {
-      // El favicon sí es confiable aquí porque el dominio ya está verificado en la base curada
-      const favicon = faviconUrl(curated.domain, size);
-      try {
-        await loadImage(favicon, FETCH_TIMEOUT_MS);
-        return { name: curated.name, kind: "favicon", domain: curated.domain, url: favicon };
-      } catch (err2) {
-        return null;
-      }
+      return null;
     }
   }
 
-  // Igual que la curada, pero para un dominio que el propio usuario confirmó manualmente
-  async function findViaManualDomain(domain, size) {
-    const clearbit = clearbitUrl(domain, size);
+  async function findViaFaviconDomain(name, domain, size) {
+    const url = faviconUrl(domain, size);
     try {
-      await loadImage(clearbit, FETCH_TIMEOUT_MS);
-      return { name: domain, kind: "clearbit", domain, url: clearbit };
+      const dims = await loadImage(url, FETCH_TIMEOUT_MS);
+      return { name, kind: "favicon", domain, url, width: dims.width, height: dims.height };
     } catch (err) {
-      const favicon = faviconUrl(domain, size);
-      try {
-        await loadImage(favicon, FETCH_TIMEOUT_MS);
-        return { name: domain, kind: "favicon", domain, url: favicon };
-      } catch (err2) {
-        return null;
-      }
+      return null;
     }
+  }
+
+  // Ejecuta las fuentes en orden, pero si la primera coincidencia entrega una imagen
+  // más chica de lo pedido, sigue probando las siguientes para ver si alguna da mejor
+  // calidad — y se queda con la de mayor resolución real entre todas las que sí cargaron.
+  async function resolveBestMatch(attempts, size) {
+    let best = null;
+    for (const attempt of attempts) {
+      const result = await attempt();
+      if (!result) continue;
+      if (!best || result.width > best.width) best = result;
+      if (isGoodEnough(best, size)) break;
+    }
+    return best;
+  }
+
+  function attemptsForQuery(query, size, curated) {
+    if (curated) {
+      return [
+        () => findViaClearbitDomain(curated.name, curated.domain, size),
+        () => findViaWikidata(curated.name, size),
+        () => findViaFaviconDomain(curated.name, curated.domain, size),
+      ];
+    }
+    return [() => findViaWikidata(query, size), () => findViaGuessedDomain(query, size)];
+  }
+
+  function attemptsForManualDomain(domain, size) {
+    return [
+      () => findViaClearbitDomain(domain, domain, size),
+      () => findViaFaviconDomain(domain, domain, size),
+    ];
   }
 
   function onSizeChange(btn) {
     currentSize = Number(btn.dataset.size);
     sizeButtons.forEach((b) => b.classList.toggle("active", b === btn));
-    if (currentMatch) refreshMatchForSize().then((updated) => updated && renderResult(updated));
+    if (lastSearch) rerunLastSearch();
   }
 
-  // Al cambiar de resolución, se reconstruye la URL para la misma fuente que ya funcionó
-  async function refreshMatchForSize() {
-    if (!currentMatch) return null;
-    const m = currentMatch;
-    let url;
-    if (m.kind === "wikimedia") url = wikimediaFileUrl(m.filename, currentSize);
-    else if (m.kind === "favicon") url = faviconUrl(m.domain, currentSize);
-    else url = clearbitUrl(m.domain, currentSize);
-
-    try {
-      await loadImage(url, FETCH_TIMEOUT_MS);
-      currentMatch = { ...m, url };
-      return currentMatch;
-    } catch (err) {
-      return m; // se mantiene la imagen previa si la nueva resolución falla
-    }
+  function rerunLastSearch() {
+    if (!lastSearch) return;
+    if (lastSearch.type === "manual") runManualDomainSearch(lastSearch.value, { silent: true });
+    else runSearch(lastSearch.value, { silent: true });
   }
 
   function onSubmit(e) {
@@ -325,28 +348,36 @@
     runManualDomainSearch(domain);
   }
 
-  async function runManualDomainSearch(domain) {
+  async function runManualDomainSearch(domain, opts) {
+    const silent = opts && opts.silent;
     const token = ++searchToken;
-    statusEl.textContent = `Probando "${domain}"...`;
-    notFoundEl.classList.add("hidden");
+    lastSearch = { type: "manual", value: domain };
+    if (!silent) {
+      statusEl.textContent = `Probando "${domain}"...`;
+      notFoundEl.classList.add("hidden");
+    }
 
-    const match = await findViaManualDomain(domain, currentSize);
+    const match = await resolveBestMatch(attemptsForManualDomain(domain, currentSize), currentSize);
     if (token !== searchToken) return;
 
     statusEl.textContent = "";
     if (match) {
       currentMatch = match;
       renderResult(match);
-    } else {
+    } else if (!silent) {
       showNotFound(domain);
     }
   }
 
-  async function runSearch(rawQuery) {
+  async function runSearch(rawQuery, opts) {
+    const silent = opts && opts.silent;
     const query = (rawQuery || "").trim();
-    resultEl.classList.add("hidden");
-    notFoundEl.classList.add("hidden");
-    statusEl.textContent = "";
+
+    if (!silent) {
+      resultEl.classList.add("hidden");
+      notFoundEl.classList.add("hidden");
+      statusEl.textContent = "";
+    }
 
     if (!query) {
       statusEl.textContent = "Escribe el nombre de una marca para buscar.";
@@ -354,31 +385,20 @@
     }
 
     const token = ++searchToken;
+    lastSearch = { type: "query", value: query };
     searchBtn.disabled = true;
-    statusEl.textContent = `Buscando "${query}"...`;
+    if (!silent) statusEl.textContent = `Buscando "${query}"...`;
 
     try {
       const curated = resolveCurated(query);
-      let match = curated ? await findViaCuratedDomain(curated, currentSize) : null;
+      const match = await resolveBestMatch(attemptsForQuery(query, currentSize, curated), currentSize);
       if (token !== searchToken) return;
-
-      if (!match) {
-        statusEl.textContent = `Buscando "${query}" en fuentes públicas (Wikidata)...`;
-        match = await findViaWikidata(query, currentSize);
-        if (token !== searchToken) return;
-      }
-
-      if (!match) {
-        statusEl.textContent = `Probando el dominio oficial de "${query}"...`;
-        match = await findViaGuessedDomain(query, currentSize);
-        if (token !== searchToken) return;
-      }
 
       statusEl.textContent = "";
       if (match) {
         currentMatch = match;
         renderResult(match);
-      } else {
+      } else if (!silent) {
         showNotFound(query);
       }
     } finally {
@@ -409,7 +429,14 @@
       providerLinkLabel = "sitio oficial";
     }
 
-    resultSource.innerHTML = `Fuente: ${providerLabel} · <a href="${providerLinkUrl}" target="_blank" rel="noopener noreferrer">${providerLinkLabel}</a>`;
+    resultSource.innerHTML = `Fuente: ${providerLabel} · <a href="${providerLinkUrl}" target="_blank" rel="noopener noreferrer">${providerLinkLabel}</a> · ${match.width}×${match.height}px`;
+
+    if (!isGoodEnough(match, currentSize)) {
+      qualityNote.textContent = `Esta fuente solo entrega ${match.width}×${match.height}px (pediste ${currentSize}px). Es la mejor calidad disponible encontrada automáticamente; si necesitas más resolución para una presentación, revisa el enlace de la fuente arriba o prueba un dominio manual con un logo en mayor calidad.`;
+      qualityNote.classList.remove("hidden");
+    } else {
+      qualityNote.classList.add("hidden");
+    }
 
     fallbackNote.classList.add("hidden");
     resultEl.classList.remove("hidden");

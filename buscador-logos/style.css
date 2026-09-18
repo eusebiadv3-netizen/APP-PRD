@@ -150,6 +150,17 @@ body {
   color: var(--accent);
 }
 
+.quality-note {
+  margin: 0 0 16px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  font-size: 0.78rem;
+  color: #92400e;
+  line-height: 1.4;
+}
+
 .controls {
   display: flex;
   flex-direction: column;
