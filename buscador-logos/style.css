@@ -1,0 +1,278 @@
+:root {
+  --bg: #f5f6fa;
+  --card-bg: #ffffff;
+  --text: #1c1e21;
+  --muted: #6b7280;
+  --accent: #4f46e5;
+  --accent-dark: #4338ca;
+  --border: #e5e7eb;
+  --danger-bg: #fff4f4;
+  --danger-border: #f4c2c2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  font-size: 1.75rem;
+  margin: 0 0 8px;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0;
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.search-form {
+  display: flex;
+  gap: 8px;
+}
+
+#brand-input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+}
+
+#brand-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+#search-btn {
+  padding: 12px 20px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+#search-btn:hover {
+  background: var(--accent-dark);
+}
+
+#search-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.status {
+  min-height: 1.2em;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.result {
+  margin-top: 20px;
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.preview-frame {
+  width: 160px;
+  height: 160px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background-image:
+    linear-gradient(45deg, #eee 25%, transparent 25%),
+    linear-gradient(-45deg, #eee 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #eee 75%),
+    linear-gradient(-45deg, transparent 75%, #eee 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+}
+
+.preview-frame img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.result-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.result-info h2 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.source-line {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 16px;
+}
+
+.source-line a {
+  color: var(--accent);
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.size-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.size-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-right: 4px;
+}
+
+.size-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.size-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.download-btn {
+  align-self: flex-start;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: white;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.download-btn:hover {
+  background: var(--accent-dark);
+}
+
+.fallback-note {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.not-found {
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 10px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+}
+
+.not-found-title {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.suggestions-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.suggestions-list li button {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: white;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.suggestions-list li button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.legal {
+  margin-top: 24px;
+  text-align: center;
+}
+
+.legal p {
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+  .result {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .controls {
+    align-items: center;
+  }
+
+  .download-btn {
+    align-self: center;
+  }
+}

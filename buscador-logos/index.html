@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buscador de Logos de Marcas (PNG)</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <h1>Buscador de Logos de Marcas</h1>
+      <p class="subtitle">Escribe el nombre de una marca y descarga su logo en PNG en segundos.</p>
+    </header>
+
+    <main class="card">
+      <form id="search-form" class="search-form" autocomplete="off">
+        <label for="brand-input" class="visually-hidden">Nombre de la marca</label>
+        <input
+          id="brand-input"
+          type="text"
+          name="brand"
+          placeholder="Ej. Spotify, Mercado Libre, Nike..."
+          list="brand-suggestions"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <datalist id="brand-suggestions"></datalist>
+        <button type="submit" id="search-btn">Buscar</button>
+      </form>
+
+      <section id="status" class="status" aria-live="polite"></section>
+
+      <section id="result" class="result hidden">
+        <div class="preview-frame">
+          <img id="logo-preview" alt="" />
+        </div>
+
+        <div class="result-info">
+          <h2 id="result-name"></h2>
+          <p id="result-source" class="source-line"></p>
+
+          <div class="controls">
+            <div class="size-picker" role="group" aria-label="Resolución de salida">
+              <span class="size-label">Resolución:</span>
+              <button type="button" class="size-btn" data-size="256">256px</button>
+              <button type="button" class="size-btn active" data-size="512">512px</button>
+              <button type="button" class="size-btn" data-size="1024">1024px</button>
+            </div>
+            <button type="button" id="download-btn" class="download-btn">Descargar PNG</button>
+          </div>
+          <p id="download-fallback-note" class="fallback-note hidden">
+            La descarga automática no está disponible para esta fuente. Haz clic derecho sobre la
+            imagen y selecciona "Guardar imagen como..." para descargarla.
+          </p>
+        </div>
+      </section>
+
+      <section id="not-found" class="not-found hidden">
+        <p class="not-found-title">No encontramos un logo para "<span id="not-found-query"></span>".</p>
+        <p id="suggestions-intro" class="hidden">Quizás quisiste decir:</p>
+        <ul id="suggestions-list" class="suggestions-list"></ul>
+      </section>
+    </main>
+
+    <footer class="legal">
+      <p>
+        Los logos mostrados son propiedad de sus respectivas marcas y se obtienen desde fuentes
+        públicas (dominio oficial de cada empresa). Este servicio no es un banco de "logos libres
+        de uso": el uso que le des al archivo descargado está sujeto a las políticas de marca de
+        cada empresa. Revisa las directrices oficiales antes de un uso comercial o público.
+      </p>
+    </footer>
+  </div>
+
+  <script src="data/brands.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
