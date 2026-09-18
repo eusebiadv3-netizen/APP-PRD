@@ -2,6 +2,8 @@
   "use strict";
 
   const DEFAULT_SIZE = 512;
+  const FETCH_TIMEOUT_MS = 6000;
+  const DOMAIN_TLDS = ["com", "io", "co", "net", "org"];
 
   const form = document.getElementById("search-form");
   const input = document.getElementById("brand-input");
@@ -19,15 +21,19 @@
   const fallbackNote = document.getElementById("download-fallback-note");
   const sizeButtons = Array.from(document.querySelectorAll(".size-btn"));
   const searchBtn = document.getElementById("search-btn");
+  const manualDomainForm = document.getElementById("manual-domain-form");
+  const manualDomainInput = document.getElementById("manual-domain-input");
 
   let currentSize = DEFAULT_SIZE;
-  let currentMatch = null; // { name, domain, source }
+  let currentMatch = null; // { name, kind, domain?, filename?, wikidataId?, url }
+  let searchToken = 0; // descarta resultados de búsquedas previas si el usuario ya lanzó otra
 
   populateAutocomplete();
   sizeButtons.forEach((btn) => btn.addEventListener("click", () => onSizeChange(btn)));
   form.addEventListener("submit", onSubmit);
   downloadBtn.addEventListener("click", onDownload);
   suggestionsList.addEventListener("click", onSuggestionClick);
+  manualDomainForm.addEventListener("submit", onManualDomainSubmit);
 
   function populateAutocomplete() {
     const seen = new Set();
@@ -53,30 +59,31 @@
     return normalize(str).replace(/[^a-z0-9]+/g, "");
   }
 
-  // Cadena de resolución: 1) base propia curada 2) dominio inferido del nombre
-  function resolveBrand(query) {
+  function hyphenSlug(str) {
+    return normalize(str)
+      .replace(/[^a-z0-9\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "-");
+  }
+
+  // Nivel 1 de la cadena de resolución: base propia curada (instantánea, alta confianza)
+  function resolveCurated(query) {
     const q = normalize(query);
     if (!q) return null;
 
     const exact = BRANDS.find(
       (b) => normalize(b.name) === q || (b.aliases || []).some((a) => normalize(a) === q)
     );
-    if (exact) return { name: exact.name, domain: exact.domain, curated: true };
+    if (exact) return { name: exact.name, domain: exact.domain };
 
     const partial = BRANDS.find(
       (b) =>
         normalize(b.name).includes(q) ||
         (b.aliases || []).some((a) => normalize(a).includes(q))
     );
-    if (partial) return { name: partial.name, domain: partial.domain, curated: true };
+    if (partial) return { name: partial.name, domain: partial.domain };
 
     return null;
-  }
-
-  function guessDomain(query) {
-    const slug = slugifyDomain(query);
-    if (!slug) return null;
-    return { name: query.trim(), domain: `${slug}.com`, curated: false };
   }
 
   function suggestSimilar(query, limit) {
@@ -112,24 +119,192 @@
     return dp[a.length][b.length] <= 2;
   }
 
-  function logoUrl(domain, size) {
+  function clearbitUrl(domain, size) {
     return `https://logo.clearbit.com/${domain}?size=${size}`;
   }
 
-  function faviconFallbackUrl(domain, size) {
+  function faviconUrl(domain, size) {
     return `https://www.google.com/s2/favicons?domain=${domain}&sz=${size}`;
+  }
+
+  function wikimediaFileUrl(filename, size) {
+    return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=${size}`;
+  }
+
+  function loadImage(url, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      let settled = false;
+      const timer = timeoutMs
+        ? setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              reject(new Error("timeout"));
+            }
+          }, timeoutMs)
+        : null;
+      img.onload = () => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        if (img.naturalWidth > 1 && img.naturalHeight > 1) resolve(url);
+        else reject(new Error("empty image"));
+      };
+      img.onerror = () => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        reject(new Error("failed to load"));
+      };
+      img.src = url;
+    });
+  }
+
+  async function fetchJson(url) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) throw new Error("bad status");
+      return await res.json();
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // Nivel 2: búsqueda universal via Wikidata/Wikimedia Commons. Cubre practicamente
+  // cualquier marca/empresa notoria publicada en internet, no solo las precargadas.
+  async function findViaWikidata(query, size) {
+    const searchUrl =
+      "https://www.wikidata.org/w/api.php?action=wbsearchentities" +
+      `&search=${encodeURIComponent(query)}&language=es&uselang=es&format=json&origin=*&type=item&limit=6`;
+
+    let searchData;
+    try {
+      searchData = await fetchJson(searchUrl);
+    } catch (err) {
+      return null;
+    }
+
+    const hits = (searchData && searchData.search) || [];
+    for (const hit of hits) {
+      const claimsUrl =
+        `https://www.wikidata.org/w/api.php?action=wbgetclaims&entity=${hit.id}` +
+        "&property=P154&format=json&origin=*";
+      let claimsData;
+      try {
+        claimsData = await fetchJson(claimsUrl);
+      } catch (err) {
+        continue;
+      }
+      const claims = claimsData && claimsData.claims && claimsData.claims.P154;
+      const filename =
+        claims && claims[0] && claims[0].mainsnak && claims[0].mainsnak.datavalue
+          ? claims[0].mainsnak.datavalue.value
+          : null;
+      if (!filename) continue;
+
+      const url = wikimediaFileUrl(filename, size);
+      try {
+        await loadImage(url, FETCH_TIMEOUT_MS);
+        return {
+          name: hit.label || query,
+          kind: "wikimedia",
+          filename,
+          wikidataId: hit.id,
+          url,
+        };
+      } catch (err) {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  function domainCandidates(query) {
+    const bases = Array.from(new Set([slugifyDomain(query), hyphenSlug(query)])).filter(Boolean);
+    const domains = [];
+    bases.forEach((base) => DOMAIN_TLDS.forEach((tld) => domains.push(`${base}.${tld}`)));
+    return domains;
+  }
+
+  // Nivel 3: dominio inferido del nombre, probando variantes de TLD/formato contra Clearbit.
+  // No se usa el favicon de Google aquí porque casi siempre responde con un ícono genérico
+  // aunque el dominio no exista, lo que daría falsos positivos para dominios no verificados.
+  async function findViaGuessedDomain(query, size) {
+    for (const domain of domainCandidates(query)) {
+      const url = clearbitUrl(domain, size);
+      try {
+        await loadImage(url, FETCH_TIMEOUT_MS);
+        return { name: query.trim(), kind: "clearbit", domain, url };
+      } catch (err) {
+        continue;
+      }
+    }
+    return null;
+  }
+
+  async function findViaCuratedDomain(curated, size) {
+    const clearbit = clearbitUrl(curated.domain, size);
+    try {
+      await loadImage(clearbit, FETCH_TIMEOUT_MS);
+      return { name: curated.name, kind: "clearbit", domain: curated.domain, url: clearbit };
+    } catch (err) {
+      // El favicon sí es confiable aquí porque el dominio ya está verificado en la base curada
+      const favicon = faviconUrl(curated.domain, size);
+      try {
+        await loadImage(favicon, FETCH_TIMEOUT_MS);
+        return { name: curated.name, kind: "favicon", domain: curated.domain, url: favicon };
+      } catch (err2) {
+        return null;
+      }
+    }
+  }
+
+  // Igual que la curada, pero para un dominio que el propio usuario confirmó manualmente
+  async function findViaManualDomain(domain, size) {
+    const clearbit = clearbitUrl(domain, size);
+    try {
+      await loadImage(clearbit, FETCH_TIMEOUT_MS);
+      return { name: domain, kind: "clearbit", domain, url: clearbit };
+    } catch (err) {
+      const favicon = faviconUrl(domain, size);
+      try {
+        await loadImage(favicon, FETCH_TIMEOUT_MS);
+        return { name: domain, kind: "favicon", domain, url: favicon };
+      } catch (err2) {
+        return null;
+      }
+    }
   }
 
   function onSizeChange(btn) {
     currentSize = Number(btn.dataset.size);
     sizeButtons.forEach((b) => b.classList.toggle("active", b === btn));
-    if (currentMatch) renderResult(currentMatch);
+    if (currentMatch) refreshMatchForSize().then((updated) => updated && renderResult(updated));
+  }
+
+  // Al cambiar de resolución, se reconstruye la URL para la misma fuente que ya funcionó
+  async function refreshMatchForSize() {
+    if (!currentMatch) return null;
+    const m = currentMatch;
+    let url;
+    if (m.kind === "wikimedia") url = wikimediaFileUrl(m.filename, currentSize);
+    else if (m.kind === "favicon") url = faviconUrl(m.domain, currentSize);
+    else url = clearbitUrl(m.domain, currentSize);
+
+    try {
+      await loadImage(url, FETCH_TIMEOUT_MS);
+      currentMatch = { ...m, url };
+      return currentMatch;
+    } catch (err) {
+      return m; // se mantiene la imagen previa si la nueva resolución falla
+    }
   }
 
   function onSubmit(e) {
     e.preventDefault();
-    const query = input.value;
-    runSearch(query);
+    runSearch(input.value);
   }
 
   function onSuggestionClick(e) {
@@ -139,7 +314,35 @@
     runSearch(btn.dataset.brand);
   }
 
-  function runSearch(rawQuery) {
+  function onManualDomainSubmit(e) {
+    e.preventDefault();
+    const domain = normalize(manualDomainInput.value)
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .replace(/\/.*$/, "")
+      .trim();
+    if (!domain) return;
+    runManualDomainSearch(domain);
+  }
+
+  async function runManualDomainSearch(domain) {
+    const token = ++searchToken;
+    statusEl.textContent = `Probando "${domain}"...`;
+    notFoundEl.classList.add("hidden");
+
+    const match = await findViaManualDomain(domain, currentSize);
+    if (token !== searchToken) return;
+
+    statusEl.textContent = "";
+    if (match) {
+      currentMatch = match;
+      renderResult(match);
+    } else {
+      showNotFound(domain);
+    }
+  }
+
+  async function runSearch(rawQuery) {
     const query = (rawQuery || "").trim();
     resultEl.classList.add("hidden");
     notFoundEl.classList.add("hidden");
@@ -150,81 +353,63 @@
       return;
     }
 
-    statusEl.textContent = `Buscando "${query}"...`;
+    const token = ++searchToken;
     searchBtn.disabled = true;
+    statusEl.textContent = `Buscando "${query}"...`;
 
-    const curated = resolveBrand(query);
-    const candidate = curated || guessDomain(query);
+    try {
+      const curated = resolveCurated(query);
+      let match = curated ? await findViaCuratedDomain(curated, currentSize) : null;
+      if (token !== searchToken) return;
 
-    if (!candidate) {
+      if (!match) {
+        statusEl.textContent = `Buscando "${query}" en fuentes públicas (Wikidata)...`;
+        match = await findViaWikidata(query, currentSize);
+        if (token !== searchToken) return;
+      }
+
+      if (!match) {
+        statusEl.textContent = `Probando el dominio oficial de "${query}"...`;
+        match = await findViaGuessedDomain(query, currentSize);
+        if (token !== searchToken) return;
+      }
+
       statusEl.textContent = "";
-      searchBtn.disabled = false;
-      showNotFound(query);
-      return;
-    }
-
-    // El fallback de favicon casi siempre devuelve una imagen (incluso genérica) aunque el
-    // dominio no exista, así que solo se usa para marcas verificadas en la base curada;
-    // para dominios inferidos se confía únicamente en Clearbit para no dar falsos positivos.
-    const urlsToTry = candidate.curated
-      ? [logoUrl(candidate.domain, currentSize), faviconFallbackUrl(candidate.domain, currentSize)]
-      : [logoUrl(candidate.domain, currentSize)];
-
-    tryLoadLogo(urlsToTry)
-      .then((sourceUsed) => {
-        currentMatch = {
-          name: candidate.name,
-          domain: candidate.domain,
-          curated: candidate.curated,
-          source: sourceUsed,
-        };
-        statusEl.textContent = "";
-        renderResult(currentMatch);
-      })
-      .catch(() => {
-        statusEl.textContent = "";
+      if (match) {
+        currentMatch = match;
+        renderResult(match);
+      } else {
         showNotFound(query);
-      })
-      .finally(() => {
-        searchBtn.disabled = false;
-      });
-  }
-
-  // Intenta cada URL de la cadena de fuentes hasta que una cargue correctamente
-  function tryLoadLogo(urls) {
-    return urls.reduce(
-      (chain, url) => chain.catch(() => loadImage(url).then(() => url)),
-      Promise.reject()
-    );
-  }
-
-  function loadImage(url) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        if (img.naturalWidth > 1 && img.naturalHeight > 1) resolve(url);
-        else reject(new Error("empty image"));
-      };
-      img.onerror = () => reject(new Error("failed to load"));
-      img.src = url;
-    });
+      }
+    } finally {
+      if (token === searchToken) searchBtn.disabled = false;
+    }
   }
 
   function renderResult(match) {
-    const url =
-      match.source && match.source.includes("google.com/s2/favicons")
-        ? faviconFallbackUrl(match.domain, currentSize)
-        : logoUrl(match.domain, currentSize);
-
-    previewImg.src = url;
+    previewImg.src = match.url;
     previewImg.alt = `Logo de ${match.name}`;
     resultName.textContent = match.name;
 
-    const providerLabel = url.includes("google.com/s2/favicons")
-      ? "favicon del sitio oficial (Google)"
-      : "Clearbit Logo API";
+    let providerLabel;
+    let providerLinkUrl;
+    let providerLinkLabel;
 
-    resultSource.innerHTML = `Fuente: ${providerLabel} · dominio: ${match.domain} · <a href="https://${match.domain}" target="_blank" rel="noopener noreferrer">sitio oficial</a>`;
+    if (match.kind === "wikimedia") {
+      providerLabel = "Wikimedia Commons (via Wikidata)";
+      providerLinkUrl = `https://www.wikidata.org/wiki/${match.wikidataId}`;
+      providerLinkLabel = "ver en Wikidata";
+    } else if (match.kind === "favicon") {
+      providerLabel = `favicon del sitio oficial (Google) · dominio: ${match.domain}`;
+      providerLinkUrl = `https://${match.domain}`;
+      providerLinkLabel = "sitio oficial";
+    } else {
+      providerLabel = `Clearbit Logo API · dominio: ${match.domain}`;
+      providerLinkUrl = `https://${match.domain}`;
+      providerLinkLabel = "sitio oficial";
+    }
+
+    resultSource.innerHTML = `Fuente: ${providerLabel} · <a href="${providerLinkUrl}" target="_blank" rel="noopener noreferrer">${providerLinkLabel}</a>`;
 
     fallbackNote.classList.add("hidden");
     resultEl.classList.remove("hidden");
@@ -251,6 +436,7 @@
       suggestionsIntro.classList.add("hidden");
     }
 
+    manualDomainInput.value = "";
     resultEl.classList.add("hidden");
     notFoundEl.classList.remove("hidden");
   }

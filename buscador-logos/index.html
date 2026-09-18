@@ -57,9 +57,23 @@
       </section>
 
       <section id="not-found" class="not-found hidden">
-        <p class="not-found-title">No encontramos un logo para "<span id="not-found-query"></span>".</p>
+        <p class="not-found-title">No encontramos un logo automático para "<span id="not-found-query"></span>".</p>
         <p id="suggestions-intro" class="hidden">Quizás quisiste decir:</p>
         <ul id="suggestions-list" class="suggestions-list"></ul>
+
+        <div class="manual-domain">
+          <label for="manual-domain-input">¿Conoces el sitio web oficial de la marca? Pruébalo directo:</label>
+          <form id="manual-domain-form" class="manual-domain-form" autocomplete="off">
+            <input
+              id="manual-domain-input"
+              type="text"
+              placeholder="ej. midominio.com"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="submit">Probar dominio</button>
+          </form>
+        </div>
       </section>
     </main>
 

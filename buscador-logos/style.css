@@ -241,6 +241,47 @@ body {
   color: var(--accent);
 }
 
+.manual-domain {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--danger-border);
+}
+
+.manual-domain label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.manual-domain-form {
+  display: flex;
+  gap: 8px;
+}
+
+.manual-domain-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.manual-domain-form button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.manual-domain-form button:hover {
+  background: var(--accent-dark);
+}
+
 .legal {
   margin-top: 24px;
   text-align: center;

@@ -17,22 +17,33 @@ O abrir `index.html` directamente en el navegador.
 
 ## Cómo funciona
 
-Cadena de resolución de logos, según la sección 8 del PRD:
+Cadena de resolución de logos, según la sección 8 del PRD (base propia →
+API externa → extracción de dominio), con Wikidata/Wikimedia Commons agregado
+como fuente universal para cubrir marcas fuera de la base curada:
 
-1. **Base propia curada** (`data/brands.js`): nombres y alias (español/inglés) de
-   marcas conocidas mapeados a su dominio oficial.
-2. **Dominio inferido**: si la marca no está en la base curada, se infiere un
-   dominio a partir del nombre (`marca` → `marca.com`) y se intenta igual.
-3. **Clearbit Logo API** (`https://logo.clearbit.com/{dominio}`) como fuente
-   principal del PNG.
-4. **Favicon de Google** (`https://www.google.com/s2/favicons`) como último
-   fallback, solo para marcas verificadas en la base curada — para dominios
-   inferidos no se usa, porque ese servicio casi siempre responde con un ícono
-   genérico aunque el dominio no exista, lo que daría falsos positivos.
+1. **Base propia curada** (`data/brands.js`): ~90 marcas de alto tráfico con
+   alias (español/inglés) mapeadas a su dominio oficial, para resultados
+   instantáneos y de alta confianza. Intenta Clearbit y, si falla, el favicon
+   de Google (aceptable aquí porque el dominio ya está verificado).
+2. **Wikidata + Wikimedia Commons**: si la marca no está en la base curada,
+   se busca la entidad en Wikidata (`wbsearchentities`) y se lee su propiedad
+   P154 ("logo image"), que apunta a un archivo en Wikimedia Commons. Esto
+   cubre prácticamente cualquier empresa/marca con presencia notable en
+   internet (Wikipedia/Wikidata), no solo las precargadas.
+3. **Dominio inferido**: si tampoco hay resultado en Wikidata, se prueban
+   variantes del nombre como dominio (`marca.com`, `marca.io`, `mi-marca.co`,
+   etc.) contra Clearbit Logo API. No se usa el favicon de Google en este
+   paso porque casi siempre responde con un ícono genérico aunque el dominio
+   no exista, lo que daría falsos positivos.
+4. **Dominio manual**: si ninguna fuente automática responde, el estado de
+   "no encontrado" ofrece un campo para que el usuario ingrese directamente
+   el dominio oficial de la marca (si lo conoce) y probarlo contra Clearbit /
+   favicon — esto le da al usuario una salida siempre disponible en vez de
+   dejarlo sin opciones.
 
-Si ninguna fuente responde con una imagen válida, se muestra el estado de
-"no encontrado" con sugerencias de marcas similares (por coincidencia de
-prefijo y distancia de edición sobre la base curada).
+Si ninguna fuente responde con una imagen válida, además se muestran
+sugerencias de marcas similares de la base curada (por coincidencia de
+prefijo y distancia de edición), útiles para errores de tipeo.
 
 ## Requisitos funcionales cubiertos (MVP)
 
