@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import { parseOrgFile, FileParseError } from "../lib/parseFile";
 import type { ParsedRow } from "../types";
+import FlowDiagram from "./FlowDiagram";
+import UsageGuide from "./UsageGuide";
 
 interface Props {
   onParsed: (rows: ParsedRow[]) => void;
@@ -39,11 +41,15 @@ export default function FileUpload({ onParsed, onBrowseSaved }: Props) {
     <div className="upload-screen">
       <h1>Generador de Organigramas</h1>
       <p className="subtitle">
-        Sube un archivo (Excel o CSV) con la lista de cargos de la empresa. Debe tener al menos
-        una columna de <strong>Cargo</strong>. Opcionalmente puedes incluir <strong>Nombre</strong>,{" "}
-        <strong>Reporta a</strong> y <strong>Estado</strong> (ocupado / vacante activa / vacante
-        inactiva).
+        Crea, edita e imprime el organigrama de una empresa a partir de un archivo Excel o CSV —
+        todo se guarda en este navegador, sin necesidad de servidores externos.
       </p>
+
+      <h2 className="upload-section-title">¿Cómo se usa?</h2>
+      <FlowDiagram />
+      <UsageGuide />
+
+      <h2 className="upload-section-title">Empieza aquí</h2>
       <div
         className="dropzone"
         onDragOver={(e) => e.preventDefault()}
