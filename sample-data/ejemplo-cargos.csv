@@ -1,0 +1,13 @@
+Cargo,Nombre,Reporta a,Estado,Tipo,Encargado temporal
+Gerente General,Ana Torres,,ocupado,normal,
+Asesor Legal,Roberto Vega,Ana Torres,ocupado,staff,
+Gerente de Operaciones,Luis Mendez,Ana Torres,ocupado,normal,
+Gerente Comercial,Marta Diaz,Ana Torres,ocupado,normal,
+Gerente de Finanzas,,Ana Torres,vacante activa,normal,
+Jefe de Logistica,Pedro Ruiz,Luis Mendez,ocupado,normal,
+Jefe de Produccion,Carla Nunez,Luis Mendez,ocupado,normal,
+Soporte TI (Contratista),Ing. Diaz,Luis Mendez,ocupado,outsourcing,
+Ejecutivo de Ventas,Jorge Paz,Marta Diaz,ocupado,normal,
+Ejecutivo de Marketing,,Marta Diaz,vacante inactiva,normal,Camila Rios
+Analista de Finanzas,Sofia Leon,Gerente de Finanzas,ocupado,normal,
+Asistente de Logistica,Diego Rios,Pedro Ruiz,ocupado,normal,
