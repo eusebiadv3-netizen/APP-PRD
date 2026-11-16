@@ -654,6 +654,36 @@ h1 {
   width: 520px;
 }
 
+.modal-preview {
+  width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.print-preview-frame {
+  margin: 1rem auto 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 10px var(--color-shadow);
+}
+
+.help-steps {
+  margin: 1rem 0 0;
+  padding-left: 1.3rem;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.help-steps li {
+  margin-bottom: 0.75rem;
+}
+
+.help-steps ul {
+  margin-top: 0.4rem;
+  padding-left: 1.1rem;
+}
+
 .search-input {
   width: 100%;
   margin-top: 1rem;

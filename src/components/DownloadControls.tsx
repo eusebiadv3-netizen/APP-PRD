@@ -5,6 +5,7 @@ import { slugify, DownloadCancelledError } from "../lib/exportImage";
 import { exportOrgChartAsPng, exportOrgChartAsPdf, printOrgChart } from "../lib/exportChart";
 import { exportOrgChartRelationsAsXlsx } from "../lib/exportTable";
 import { PAGE_SIZE_LABEL, type PageSize } from "../lib/printExport";
+import PrintPreviewModal from "./PrintPreviewModal";
 
 const FULL_VALUE = "__full__";
 const ALL_SIGNATURE_ROLES: SignatureRole[] = ["presidente", "vicepresidente", "gerente-general"];
@@ -49,6 +50,7 @@ export default function DownloadControls({
   const [pageSize, setPageSize] = useState<PageSize>("carta");
   const [busy, setBusy] = useState<BusyAction>(null);
   const [error, setError] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState(false);
 
   function toggleSignatureRole(role: SignatureRole) {
     if (signatureRoles.includes(role)) {
@@ -165,6 +167,9 @@ export default function DownloadControls({
         ))}
       </div>
 
+      <button className="btn-secondary" disabled={busy !== null} onClick={() => setPreviewing(true)}>
+        Vista previa
+      </button>
       <button
         className="btn-primary"
         disabled={busy !== null}
@@ -228,6 +233,46 @@ export default function DownloadControls({
         {busy === "xlsx" ? "Generando Excel..." : "Descargar Excel (Cargo/Nombre/Reporta a)"}
       </button>
       {error && <span className="download-error">{error}</span>}
+      {previewing && (
+        <PrintPreviewModal
+          nodes={exportNodes}
+          logoDataUrl={logoDataUrl}
+          pageSize={pageSize}
+          title={currentTitle()}
+          updateDate={updateDate}
+          signatureRoles={signatureRoles}
+          busy={busy !== null}
+          onClose={() => setPreviewing(false)}
+          onDownloadPng={() =>
+            run("png", () =>
+              exportOrgChartAsPng(
+                exportNodes,
+                currentFilename(),
+                logoDataUrl,
+                pageSize,
+                currentTitle(),
+                updateDate,
+                signatureRoles,
+                companyName
+              )
+            )
+          }
+          onDownloadPdf={() =>
+            run("pdf", () =>
+              exportOrgChartAsPdf(
+                exportNodes,
+                currentFilename(),
+                logoDataUrl,
+                pageSize,
+                currentTitle(),
+                updateDate,
+                signatureRoles,
+                companyName
+              )
+            )
+          }
+        />
+      )}
     </div>
   );
 }

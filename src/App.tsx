@@ -28,6 +28,7 @@ import DownloadControls from "./components/DownloadControls";
 import LogoUpload from "./components/LogoUpload";
 import PositionsTable from "./components/PositionsTable";
 import SavedChartsBrowser from "./components/SavedChartsBrowser";
+import HelpModal from "./components/HelpModal";
 
 type ViewMode = "chart" | "table";
 
@@ -44,6 +45,7 @@ export default function App() {
   const [editingNode, setEditingNode] = useState<OrgNode | null>(null);
   const [addingPosition, setAddingPosition] = useState(false);
   const [browsingSaved, setBrowsingSaved] = useState(false);
+  const [showingHelp, setShowingHelp] = useState(false);
   const [editingCompanyName, setEditingCompanyName] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("chart");
   const [viewRootId, setViewRootId] = useState<string | null>(
@@ -248,6 +250,9 @@ export default function App() {
               <button className="btn-secondary" onClick={() => setAddingPosition(true)}>
                 Agregar posición
               </button>
+              <button className="btn-secondary" onClick={() => setShowingHelp(true)}>
+                ¿Cómo se usa?
+              </button>
               <button className="btn-secondary" onClick={() => setBrowsingSaved(true)}>
                 Organigramas guardados
               </button>
@@ -312,6 +317,8 @@ export default function App() {
       {browsingSaved && (
         <SavedChartsBrowser onOpen={handleOpenSavedChart} onClose={() => setBrowsingSaved(false)} />
       )}
+
+      {showingHelp && <HelpModal onClose={() => setShowingHelp(false)} />}
     </div>
   );
 }
