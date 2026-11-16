@@ -9,8 +9,37 @@ export default function HelpModal({ onClose }: Props) {
         <h2>¿Cómo se usa?</h2>
         <ol className="help-steps">
           <li>
-            <strong>Sube tu archivo</strong> Excel o CSV con los cargos (columnas: Cargo, Nombre,
-            Reporta a, Estado, Tipo, Encargado temporal — las que no tengas se dejan en blanco).
+            <strong>Sube tu archivo</strong> Excel o CSV con los cargos. Columnas que reconoce:
+            <ul>
+              <li>
+                <strong>Cargo</strong>: el título del puesto (ej. "Gerente de Ventas"). Es la única
+                obligatoria.
+              </li>
+              <li>
+                <strong>Nombre</strong>: quién ocupa el cargo. Se deja vacío si está vacante.
+              </li>
+              <li>
+                <strong>Reporta a</strong>: el nombre o el cargo de su jefe directo.
+              </li>
+              <li>
+                <strong>Estado</strong>: <code>ocupado</code> (alguien lo tiene),{" "}
+                <code>vacante activa</code> (está libre y se está buscando a alguien), o{" "}
+                <code>vacante inactiva</code> (está libre y no se está buscando activamente).
+              </li>
+              <li>
+                <strong>Encargado temporal</strong>: solo aplica cuando el Estado es{" "}
+                <code>vacante inactiva</code> — el nombre de quien cubre el cargo mientras tanto.
+                Vacío si nadie lo está cubriendo.
+              </li>
+              <li>
+                <strong>Tipo</strong>: <code>normal</code> (línea de mando, línea sólida),{" "}
+                <code>staff</code> (asesoría, no está en la línea de mando directa — línea punteada), u{" "}
+                <code>outsourcing</code> (contratista externo, no es personal directo — se resalta en
+                color morado).
+              </li>
+            </ul>
+            Las columnas que no tengas se dejan en blanco; la app las completa con sus valores por
+            defecto.
           </li>
           <li>
             <strong>Confirma la jerarquía</strong>: revisa quién le reporta a quién antes de generar

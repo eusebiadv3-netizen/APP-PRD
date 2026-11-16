@@ -652,6 +652,8 @@ h1 {
 
 .modal-wide {
   width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 .modal-preview {
@@ -682,6 +684,13 @@ h1 {
 .help-steps ul {
   margin-top: 0.4rem;
   padding-left: 1.1rem;
+}
+
+.help-steps code {
+  background: var(--color-surface-alt);
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  font-size: 0.85em;
 }
 
 .search-input {
