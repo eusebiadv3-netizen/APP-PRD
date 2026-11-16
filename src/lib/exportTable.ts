@@ -1,6 +1,6 @@
 import * as XLSX from "xlsx";
 import { toPng } from "html-to-image";
-import type { OrgNode, PositionStatus } from "../types";
+import type { OrgNode, PositionStatus, PositionType } from "../types";
 import { saveBlob, dataUrlToBlob, withCompanyFolder } from "./exportImage";
 
 const STATUS_LABELS: Record<PositionStatus, string> = {
@@ -9,11 +9,22 @@ const STATUS_LABELS: Record<PositionStatus, string> = {
   "vacante-inactiva": "Vacante inactiva",
 };
 
+const TYPE_LABELS: Record<PositionType, string> = {
+  normal: "Normal",
+  staff: "Staff",
+  outsourcing: "Outsourcing",
+};
+
+/**
+ * A single value — never "Nombre (Cargo)" combined into one cell — so the
+ * column holds exactly what the upload parser looks a "Reporta a" hint up
+ * against (a name or a title, one or the other).
+ */
 function managerLabel(node: OrgNode, nodes: OrgNode[]): string {
   if (!node.managerId) return "";
   const manager = nodes.find((n) => n.id === node.managerId);
   if (!manager) return "";
-  return manager.name ? `${manager.name} (${manager.title})` : manager.title;
+  return manager.name || manager.title;
 }
 
 export async function exportPositionsAsXlsx(
@@ -51,11 +62,12 @@ export async function exportTableAsPng(
 }
 
 /**
- * The org chart's own quick Excel export: just the three columns needed to
- * read the reporting structure back out (Cargo, Nombre, Reporta a) — no
- * status/type/interim columns, unlike the fuller positions-table export.
+ * The org chart's own Excel export: every field the upload file recognizes
+ * (Cargo, Nombre, Reporta a, Estado, Tipo, Encargado temporal), one value
+ * per column, in the same column order as the sample file — so the download
+ * both documents the organigrama and is itself a valid file to re-upload.
  */
-export async function exportOrgChartRelationsAsXlsx(
+export async function exportOrgChartFullAsXlsx(
   nodes: OrgNode[],
   filename: string,
   companyName: string
@@ -64,9 +76,19 @@ export async function exportOrgChartRelationsAsXlsx(
     Cargo: n.title,
     Nombre: n.name,
     "Reporta a": managerLabel(n, nodes),
+    Estado: STATUS_LABELS[n.status],
+    Tipo: TYPE_LABELS[n.positionType],
+    "Encargado temporal": n.interimName,
   }));
   const worksheet = XLSX.utils.json_to_sheet(rows);
-  worksheet["!cols"] = [{ wch: 28 }, { wch: 22 }, { wch: 32 }];
+  worksheet["!cols"] = [
+    { wch: 28 },
+    { wch: 22 },
+    { wch: 28 },
+    { wch: 16 },
+    { wch: 14 },
+    { wch: 24 },
+  ];
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Organigrama");
   const buffer = XLSX.write(workbook, { type: "array", bookType: "xlsx" }) as ArrayBuffer;

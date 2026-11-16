@@ -69,8 +69,10 @@ export default function HelpModal({ onClose }: Props) {
             quedar la hoja (con logo, título, fecha y firmas) sin generar todavía el archivo.
           </li>
           <li>
-            <strong>Descarga</strong> en el formato que necesites: imagen (PNG), PDF, Excel de 3
-            columnas, o usa "Imprimir" para mandarlo directo a la impresora.
+            <strong>Descarga</strong> en el formato que necesites: imagen (PNG), PDF, Excel con todas
+            las columnas (Cargo, Nombre, Reporta a, Estado, Tipo, Encargado temporal — una por columna,
+            lista para volver a subirla si la editas), o usa "Imprimir" para mandarlo directo a la
+            impresora.
           </li>
           <li>
             <strong>Para compartirlo con otra persona</strong>, mándale el archivo descargado (PNG,

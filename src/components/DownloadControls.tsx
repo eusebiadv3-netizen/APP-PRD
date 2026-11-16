@@ -3,7 +3,7 @@ import type { OrgNode, SignatureRole } from "../types";
 import { SIGNATURE_ROLE_LABEL } from "../types";
 import { slugify, DownloadCancelledError } from "../lib/exportImage";
 import { exportOrgChartAsPng, exportOrgChartAsPdf, printOrgChart } from "../lib/exportChart";
-import { exportOrgChartRelationsAsXlsx } from "../lib/exportTable";
+import { exportOrgChartFullAsXlsx } from "../lib/exportTable";
 import { PAGE_SIZE_LABEL, type PageSize } from "../lib/printExport";
 import PrintPreviewModal from "./PrintPreviewModal";
 
@@ -225,12 +225,10 @@ export default function DownloadControls({
         className="btn-secondary"
         disabled={busy !== null}
         onClick={() =>
-          run("xlsx", () =>
-            exportOrgChartRelationsAsXlsx(exportNodes, currentFilename(), companyName)
-          )
+          run("xlsx", () => exportOrgChartFullAsXlsx(exportNodes, currentFilename(), companyName))
         }
       >
-        {busy === "xlsx" ? "Generando Excel..." : "Descargar Excel (Cargo/Nombre/Reporta a)"}
+        {busy === "xlsx" ? "Generando Excel..." : "Descargar Excel (todas las columnas)"}
       </button>
       {error && <span className="download-error">{error}</span>}
       {previewing && (
