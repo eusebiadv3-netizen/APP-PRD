@@ -669,6 +669,28 @@ h1 {
   box-shadow: 0 2px 10px var(--color-shadow);
 }
 
+.preview-title-controls {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.preview-title-controls .view-select {
+  flex: 1;
+  min-width: 200px;
+}
+
+.preview-title-controls input,
+.preview-title-controls select {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
 .help-steps {
   margin: 1rem 0 0;
   padding-left: 1.3rem;

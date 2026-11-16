@@ -49,8 +49,18 @@ export default function PrintPage({
   updateDate,
   signatureRoles,
 }: Props) {
-  const { pageWidth, pageHeight, marginPx, titleRowPx, logoRowPx, signatureRowPx, scale, offsetX, offsetY } =
-    layout;
+  const {
+    pageWidth,
+    pageHeight,
+    marginPx,
+    titleRowPx,
+    updateDateRowPx,
+    logoRowPx,
+    signatureRowPx,
+    scale,
+    offsetX,
+    offsetY,
+  } = layout;
 
   return (
     <div
@@ -83,25 +93,41 @@ export default function PrintPage({
           top: marginPx,
           height: titleRowPx,
           display: "flex",
-          alignItems: "baseline",
+          alignItems: "center",
           justifyContent: "center",
-          gap: 12,
+          fontSize: 21,
+          fontWeight: 700,
+          color: "#1e293b",
+          textAlign: "center",
         }}
       >
-        <span style={{ fontSize: 21, fontWeight: 700, color: "#1e293b" }}>{title}</span>
-        {updateDate && (
-          <span style={{ fontSize: 13, color: "#64748b" }}>
-            Fecha de actualización: {formatDateEs(updateDate)}
-          </span>
-        )}
+        {title}
       </div>
-      {logoDataUrl && (
+      {updateDate && (
         <div
           style={{
             position: "absolute",
             left: marginPx,
             right: marginPx,
             top: marginPx + titleRowPx,
+            height: updateDateRowPx,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 13,
+            color: "#64748b",
+          }}
+        >
+          Fecha de actualización: {formatDateEs(updateDate)}
+        </div>
+      )}
+      {logoDataUrl && (
+        <div
+          style={{
+            position: "absolute",
+            left: marginPx,
+            right: marginPx,
+            top: marginPx + titleRowPx + updateDateRowPx,
             height: logoRowPx - 24,
             display: "flex",
             alignItems: "center",

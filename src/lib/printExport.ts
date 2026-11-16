@@ -1,7 +1,8 @@
 export const LETTER_DPI = 96;
 export const PAGE_MARGIN_IN = 0.4;
 export const LOGO_ROW_IN = 1.3;
-export const TITLE_ROW_IN = 0.55;
+export const TITLE_ROW_IN = 0.4;
+export const UPDATE_DATE_ROW_IN = 0.28;
 export const SIGNATURE_ROW_IN = 0.9;
 const MAX_CONTENT_SCALE = 2.5;
 
@@ -30,6 +31,7 @@ export interface PrintPageLayout {
   pageHeight: number;
   marginPx: number;
   titleRowPx: number;
+  updateDateRowPx: number;
   logoRowPx: number;
   signatureRowPx: number;
   scale: number;
@@ -39,6 +41,7 @@ export interface PrintPageLayout {
 
 export interface PrintPageOptions {
   hasLogo: boolean;
+  hasUpdateDate: boolean;
   hasSignatures: boolean;
 }
 
@@ -46,21 +49,21 @@ export interface PrintPageOptions {
  * Picks whichever orientation of the chosen page size (Carta/Oficio,
  * portrait/landscape) fits the chart's natural size with the least
  * shrinking, then returns everything needed to center it inside a 0.4in
- * margin (below a title row — the update date, when set, shares that same
- * row rather than reserving its own — and a logo row when there's a logo;
- * above an optional signature row).
+ * margin (below a title row, an update-date row directly under it, and a
+ * logo row when there's a logo; above an optional signature row).
  */
 export function computePrintPageLayout(
   contentWidth: number,
   contentHeight: number,
   pageSize: PageSize = "carta",
-  options: PrintPageOptions = { hasLogo: false, hasSignatures: false }
+  options: PrintPageOptions = { hasLogo: false, hasUpdateDate: false, hasSignatures: false }
 ): PrintPageLayout {
   const marginPx = Math.round(PAGE_MARGIN_IN * LETTER_DPI);
   const titleRowPx = Math.round(TITLE_ROW_IN * LETTER_DPI);
+  const updateDateRowPx = options.hasUpdateDate ? Math.round(UPDATE_DATE_ROW_IN * LETTER_DPI) : 0;
   const logoRowPx = options.hasLogo ? Math.round(LOGO_ROW_IN * LETTER_DPI) : 0;
   const signatureRowPx = options.hasSignatures ? Math.round(SIGNATURE_ROW_IN * LETTER_DPI) : 0;
-  const topReservedPx = titleRowPx + logoRowPx;
+  const topReservedPx = titleRowPx + updateDateRowPx + logoRowPx;
   const bottomReservedPx = signatureRowPx;
 
   let best: PrintPageLayout | null = null;
@@ -77,6 +80,7 @@ export function computePrintPageLayout(
       pageHeight,
       marginPx,
       titleRowPx,
+      updateDateRowPx,
       logoRowPx,
       signatureRowPx,
       scale,

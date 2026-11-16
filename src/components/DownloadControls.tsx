@@ -5,7 +5,7 @@ import { slugify, DownloadCancelledError } from "../lib/exportImage";
 import { exportOrgChartAsPng, exportOrgChartAsPdf, printOrgChart } from "../lib/exportChart";
 import { exportOrgChartFullAsXlsx } from "../lib/exportTable";
 import { PAGE_SIZE_LABEL, type PageSize } from "../lib/printExport";
-import PrintPreviewModal from "./PrintPreviewModal";
+import PrintPreviewModal, { type TitleCase } from "./PrintPreviewModal";
 
 const FULL_VALUE = "__full__";
 const ALL_SIGNATURE_ROLES: SignatureRole[] = ["presidente", "vicepresidente", "gerente-general"];
@@ -51,6 +51,8 @@ export default function DownloadControls({
   const [busy, setBusy] = useState<BusyAction>(null);
   const [error, setError] = useState<string | null>(null);
   const [previewing, setPreviewing] = useState(false);
+  const [titleOverride, setTitleOverride] = useState("");
+  const [titleCase, setTitleCase] = useState<TitleCase>("normal");
 
   function toggleSignatureRole(role: SignatureRole) {
     if (signatureRoles.includes(role)) {
@@ -72,6 +74,13 @@ export default function DownloadControls({
   function currentTitle(): string {
     const rootNode = currentAreaNode();
     return rootNode ? `Organigrama de ${rootNode.title}` : "Organigrama completo";
+  }
+
+  function finalTitle(): string {
+    const base = titleOverride.trim() || currentTitle();
+    if (titleCase === "upper") return base.toUpperCase();
+    if (titleCase === "lower") return base.toLowerCase();
+    return base;
   }
 
   async function run(action: BusyAction, task: () => Promise<void>) {
@@ -180,7 +189,7 @@ export default function DownloadControls({
               currentFilename(),
               logoDataUrl,
               pageSize,
-              currentTitle(),
+              finalTitle(),
               updateDate,
               signatureRoles,
               companyName
@@ -200,7 +209,7 @@ export default function DownloadControls({
               currentFilename(),
               logoDataUrl,
               pageSize,
-              currentTitle(),
+              finalTitle(),
               updateDate,
               signatureRoles,
               companyName
@@ -215,7 +224,7 @@ export default function DownloadControls({
         disabled={busy !== null}
         onClick={() =>
           run("print", () =>
-            printOrgChart(exportNodes, logoDataUrl, pageSize, currentTitle(), updateDate, signatureRoles)
+            printOrgChart(exportNodes, logoDataUrl, pageSize, finalTitle(), updateDate, signatureRoles)
           )
         }
       >
@@ -236,7 +245,12 @@ export default function DownloadControls({
           nodes={exportNodes}
           logoDataUrl={logoDataUrl}
           pageSize={pageSize}
-          title={currentTitle()}
+          titleInput={titleOverride}
+          defaultTitle={currentTitle()}
+          onTitleInputChange={setTitleOverride}
+          titleCase={titleCase}
+          onTitleCaseChange={setTitleCase}
+          renderedTitle={finalTitle()}
           updateDate={updateDate}
           signatureRoles={signatureRoles}
           busy={busy !== null}
@@ -248,7 +262,7 @@ export default function DownloadControls({
                 currentFilename(),
                 logoDataUrl,
                 pageSize,
-                currentTitle(),
+                finalTitle(),
                 updateDate,
                 signatureRoles,
                 companyName
@@ -262,7 +276,7 @@ export default function DownloadControls({
                 currentFilename(),
                 logoDataUrl,
                 pageSize,
-                currentTitle(),
+                finalTitle(),
                 updateDate,
                 signatureRoles,
                 companyName

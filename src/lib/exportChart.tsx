@@ -30,6 +30,7 @@ async function renderPrintPageToDataUrl(
   const { width: contentWidth, height: contentHeight } = computeLayout(nodes);
   const layout = computePrintPageLayout(contentWidth, contentHeight, pageSize, {
     hasLogo: !!logoDataUrl,
+    hasUpdateDate: !!updateDate,
     hasSignatures: signatureRoles.length > 0,
   });
 
@@ -142,6 +143,7 @@ export async function printOrgChart(
   const { width: contentWidth, height: contentHeight } = computeLayout(nodes);
   const layout = computePrintPageLayout(contentWidth, contentHeight, pageSize, {
     hasLogo: !!logoDataUrl,
+    hasUpdateDate: !!updateDate,
     hasSignatures: signatureRoles.length > 0,
   });
 
